@@ -1,12 +1,41 @@
-# unpacked plugin folders
-plugins/**/*
+# Visual Studio Code directories
+.vscode
 
-# files directory where uploads go
-files
+# Visual Studi Code CMake directories
+build
 
-# DBMigrate plugin: generated SQL
-db/sql
+# Doxygen directories
+doc
 
-# AssetBundler plugin: generated bundles
-javascripts/bundles
-stylesheets/bundles
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app
