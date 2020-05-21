@@ -11,33 +11,8 @@ function(DumpCMakeVariables)
 endfunction()
 
 #プロジェクト名
-set(PROJECT_NAME "clear")
+set(PROJECT_NAME "sample_draw")
 project(${PROJECT_NAME})
-
-#ソース
-set(SRCS
-	${CMAKE_SOURCE_DIR}/source/clear.cpp
-)
-#インクルードパス
-set(INC_PATH
-	${CMAKE_SOURCE_DIR}/source
-	${CMAKE_SOURCE_DIR}/../library/include/GLFW
-	${CMAKE_SOURCE_DIR}/../library/include/GLEW
-)
-#ライブラリパス
-set(LIB_PATH
-	${CMAKE_SOURCE_DIR}/../library/lib
-)
-#ライブラリ
-set(LIBS
-	opengl32.lib
-	glfw3.lib
-	libglew32.lib
-)
-#プリプロセッサ
-add_definitions(
-	-DGLEW_STATIC
-)
 
 message(STATUS "* CXX CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 message(STATUS "* CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
@@ -75,7 +50,7 @@ endif()
 #VisualStudioの設定
 set(CMAKE_SUPPRESS_REGENERATION true) #ZERO_CHECKプロジェクトを生成しない
 set_property(GLOBAL PROPERTY USE_FOLDERS ON) #フィルタ機能を有効にする
-set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME}) #スタートアッププロジェクトを設定
+#set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT ${PROJECT_NAME}) #スタートアッププロジェクトを設定
 source_group(TREE ${CMAKE_SOURCE_DIR}/source PREFIX "\\source" FILES ${SOURCES}) #ソースフィルタを設定
 
 #出力ディレクトリ設定(ビルドタイプがDebugの場合)
@@ -85,14 +60,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release")
 
-#インクルードパス設定
-include_directories(${INC_PATH})
-#ライブラリパス設定
-link_directories(${LIB_PATH})
-#実行ファイル
-add_executable(${PROJECT_NAME} ${SRCS})
-#リンク
-target_link_libraries(${PROJECT_NAME} ${LIBS})
+#サブディレクトリ
+add_subdirectory(00_window_create)
+add_subdirectory(01_window_event)
+add_subdirectory(10_clear)
+add_subdirectory(11_rectangle)
 
 #CMakeで設定されている全ての変数を出力する
 #DumpCMakeVariables()
