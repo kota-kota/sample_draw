@@ -10,6 +10,8 @@
 #include "Object.hpp"
 #include "GlobalDrawer.hpp"
 
+#include <iostream>
+
 namespace my {
     /**
      * @brief コンストラクタ
@@ -31,10 +33,12 @@ namespace my {
     {
         // 頂点配列オブジェクトを作成する
         glGenVertexArrays(1, &this->m_vao);
+        std::cout << "* VAO:" << m_vao << std::endl;
         glBindVertexArray(this->m_vao);
 
         // 頂点用のバッファオブジェクトを作成する
         glGenBuffers(1, &this->m_vertex_vbo);
+        std::cout << "* VBO V:" << m_vertex_vbo << std::endl;
         glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
         const std::int32_t vsize = static_cast<std::int32_t>(vertexes.size() * sizeof(Vertex));
         const std::int32_t csize = static_cast<std::int32_t>(colors.size() * sizeof(Color));
@@ -46,6 +50,7 @@ namespace my {
 
         // 頂点インデックス用のバッファオブジェクトを作成する
         glGenBuffers(1, &this->m_index_vbo);
+        std::cout << "* VBO I:" << m_index_vbo << std::endl;
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
         const std::int32_t isize = static_cast<std::int32_t>(indexes.size() * sizeof(GLuint));
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize, nullptr, GL_DYNAMIC_DRAW);
@@ -78,16 +83,18 @@ namespace my {
     void Shape::draw()
     {
         // シェーダ取得
-        Shader shader = GlobalDrawer::instance().getShader();
+        Shader_11ShapeSimple shader = GlobalDrawer::instance().getShader_11ShapeSimple();
         const GLuint prog = shader.getProgram();
         const GLint pos_loc = shader.getPositionLocation();
         const GLint col_loc = shader.getColorLocation();
 
         // シェーダプログラムを指定
-        glUseProgram(shader.getProgram());
+        glUseProgram(prog);
 
         // 頂点配列オブジェクトの結合
         glBindVertexArray(this->m_vao);
+        glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
         // 頂点データを指定
         glVertexAttribPointer(pos_loc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
         glEnableVertexAttribArray(pos_loc);

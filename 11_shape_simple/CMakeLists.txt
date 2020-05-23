@@ -11,12 +11,12 @@ function(DumpCMakeVariables)
 endfunction()
 
 #プロジェクト名
-set(PROJECT_NAME "11_rectangle")
+set(PROJECT_NAME "11_shape_simple")
 project(${PROJECT_NAME})
 
 #ソース
 set(SRCS
-	${CMAKE_SOURCE_DIR}/source/11_rectangle.cpp
+	${CMAKE_SOURCE_DIR}/source/11_shape_simple.cpp
 	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.hpp
 	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.cpp
 	${CMAKE_SOURCE_DIR}/source/Object.hpp

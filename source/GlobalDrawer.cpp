@@ -10,38 +10,16 @@
 #include "GlobalDrawer.hpp"
 
 #include <iostream>
+#include <fstream>
 #include <vector>
-
-namespace {
-     //! バーテックスシェーダのソースプログラム
-    constexpr GLchar VERT_SRC[] =
-        "#version 100\n"
-        "in vec3 position;\n"
-        "in vec4 color;\n"
-        "out vec4 vertex_color;\n"
-        "void main()\n"
-        "{\n"
-        "  vertex_color = color / 255.0F;\n"
-        "  gl_Position = vec4(position, 1.0);\n"
-        "}\n";
-
-    //! フラグメントシェーダのソースプログラム
-    constexpr GLchar FRAG_SRC[] =
-        "#version 100\n"
-        "in vec4 vertex_color;\n"
-        "out vec4 fragment;\n"
-        "void main()\n"
-        "{\n"
-        " fragment = vertex_color;\n"
-        "}\n";
-}
+#include <iterator>
 
 namespace my {
     /**
      * @brief デフォルトコンストラクタ
      * 
      */
-    Shader::Shader() :
+    Shader_11ShapeSimple::Shader_11ShapeSimple() :
         m_progid(0U), m_loc_pos(-1), m_loc_col(-1)
     {
     }
@@ -53,10 +31,10 @@ namespace my {
      * @param [in] loc_pos 頂点のattribute位置
      * @param [in] loc_col 色のattribute位置
      */
-    Shader::Shader(const GLuint progid, const GLint loc_pos, const GLint loc_col) :
+    Shader_11ShapeSimple::Shader_11ShapeSimple(const GLuint progid, const GLint loc_pos, const GLint loc_col) :
         m_progid(progid), m_loc_pos(loc_pos), m_loc_col(loc_col)
     {
-        std::cout << "Shader progId:" << progid << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+        std::cout << "Shader_11ShapeSimple progId:" << progid << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
     }
 
     /**
@@ -65,7 +43,7 @@ namespace my {
      * @retval 0 異常
      * @retval >0 正常
      */
-    GLuint Shader::getProgram() const { return this->m_progid; }
+    GLuint Shader_11ShapeSimple::getProgram() const { return this->m_progid; }
 
     /**
      * @brief 頂点のattribute位置を取得
@@ -73,7 +51,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader::getPositionLocation() const { return this->m_loc_pos; }
+    GLint Shader_11ShapeSimple::getPositionLocation() const { return this->m_loc_pos; }
 
     /**
      * @brief 色のattribute位置を取得
@@ -81,7 +59,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader::getColorLocation() const { return this->m_loc_col; }
+    GLint Shader_11ShapeSimple::getColorLocation() const { return this->m_loc_col; }
 }
 
 namespace my {
@@ -91,14 +69,10 @@ namespace my {
      * @par 詳細
      *      シェーダプログラムを作成する。
      */
-    ShaderCompiler::ShaderCompiler() :
-        m_shader()
+    ShaderBuilder::ShaderBuilder() :
+        m_11_shape_simple()
     {
-        // シェーダプログラムを作成する
-        GLuint progid = this->createProgram(VERT_SRC, FRAG_SRC);
-        GLint loc_pos = glGetAttribLocation(progid, "position");
-        GLint loc_col = glGetAttribLocation(progid, "color");
-        this->m_shader = Shader(progid, loc_pos, loc_col);
+        loadShader_11ShapeSimple();
     }
 
     /**
@@ -107,18 +81,60 @@ namespace my {
      * @par 詳細
      *      シェーダプログラムを破棄する。
      */
-    ShaderCompiler::~ShaderCompiler()
+    ShaderBuilder::~ShaderBuilder()
     {
-        glDeleteProgram(this->m_shader.getProgram());
+        glDeleteProgram(this->m_11_shape_simple.getProgram());
     }
 
     /**
-     * @brief シェーダプログラムの取得
+     * @brief 11_shape_simpleシェーダのプログラムの取得
      * 
      * @par 詳細
-     *      シェーダプログラムを取得する。
+     *      11_shape_simpleシェーダのプログラムを取得する。
      */
-    Shader ShaderCompiler::getShader() const { return this->m_shader; }
+    Shader_11ShapeSimple ShaderBuilder::getShader_11ShapeSimple() const { return this->m_11_shape_simple; }
+
+    /**
+     * @brief 11_shape_simpleシェーダの読み込み
+     * 
+     */
+    void ShaderBuilder::loadShader_11ShapeSimple()
+    {
+        const std::string vsrc = readShaderSource("C:\\workspace\\sample_draw\\source\\shader\\11_shape_simple.vert");
+        const std::string fsrc = readShaderSource("C:\\workspace\\sample_draw\\source\\shader\\11_shape_simple.frag");
+        if ((!vsrc.empty()) && (!fsrc.empty())) {
+            GLuint progid = createProgram(vsrc, fsrc);
+            GLint loc_pos = glGetAttribLocation(progid, "position");
+            GLint loc_col = glGetAttribLocation(progid, "color");
+            this->m_11_shape_simple = Shader_11ShapeSimple(progid, loc_pos, loc_col);
+        }
+    }
+
+    /**
+     * @brief シェーダソースをファイル読み込み
+     * 
+     * @param [in] name シェーダのソースファイルパス
+     * 
+     * @return std::string シェーダのソースファイルの文字列
+     * 
+     * @par 詳細
+     *      シェーダのソースファイルを読み込んみ、ソース文字列を返す。
+     */
+    std::string ShaderBuilder::readShaderSource(const std::string srcpath)
+    {
+        if (srcpath.empty()) {
+            return std::string();
+        }
+        // ソースファイルを開く
+        std::ifstream file(srcpath);
+        if (file.fail()) {
+            // 開けなかった
+            std::cerr << "Shader::readShaderSource() .. Failed to open " << srcpath << std::endl;
+            return std::string();
+        }
+        // 読み込み成功
+        return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    }
 
     /**
      * @brief シェーダプログラムの作成
@@ -131,14 +147,15 @@ namespace my {
      * @par 詳細
      *      なし
      */
-    GLuint ShaderCompiler::createProgram(const char *vsrc, const char *fsrc)
+    GLuint ShaderBuilder::createProgram(const std::string& vsrc, const std::string& fsrc)
     {
         // 空のプログラムオブジェクトを作成する
         const GLuint program = glCreateProgram();
-        if (vsrc != NULL) {
+        if (!vsrc.empty()) {
+            const GLchar* pvsrc = vsrc.c_str();
             // バーテックスシェーダのシェーダオブジェクトを作成する
             const GLuint vobj = glCreateShader(GL_VERTEX_SHADER);
-            glShaderSource(vobj, 1, &vsrc, NULL);
+            glShaderSource(vobj, 1, &pvsrc, NULL);
             glCompileShader(vobj);
             //作成できたかチェックする
             GLint retCompiled = 0;
@@ -155,10 +172,11 @@ namespace my {
             glAttachShader(program, vobj);
             glDeleteShader(vobj);
         }
-        if (fsrc != NULL) {
+        if (!fsrc.empty()) {
+            const GLchar* pfsrc = fsrc.c_str();
             //フラグメントシェーダのシェーダオブジェクトを作成する
             const GLuint fobj = glCreateShader(GL_FRAGMENT_SHADER);
-            glShaderSource(fobj, 1, &fsrc, NULL);
+            glShaderSource(fobj, 1, &pfsrc, NULL);
             glCompileShader(fobj);
             //作成できたかチェックする
             GLint retCompiled = 0;
@@ -201,8 +219,7 @@ namespace my {
      * @par 詳細
      *      なし
      */
-    //シェーダのコンパイル時のログを出力する
-    void ShaderCompiler::printShaderLog(GLuint shader)
+    void ShaderBuilder::printShaderLog(const GLuint shader)
     {
         // シェーダのコンパイル時のログの長さを取得する
         GLsizei bufSize = 0;
@@ -223,7 +240,7 @@ namespace my {
      * 
      */
     GlobalDrawer::GlobalDrawer() :
-        m_width(0), m_height(0), m_shader()
+        m_width(0), m_height(0), m_fbwidth(0), m_fbHeight(0), m_scale(0.0F), m_shaderbuilder()
     {
     }
 
@@ -238,24 +255,58 @@ namespace my {
     }
 
     /**
-     * @brief 画面幅高さを設定
+     * @brief 11_shape_simpleシェーダのプログラムを取得
+     * 
+     * @return Shader_11ShapeSimple 11_shape_simpleシェーダのプログラム
+     */
+    Shader_11ShapeSimple GlobalDrawer::getShader_11ShapeSimple() const
+    {
+        return this->m_shaderbuilder.getShader_11ShapeSimple();
+    }
+
+    /**
+     * @brief 画面サイズの変更
      * 
      * @param [in] w 画面幅[pixel]
      * @param [in] h 画面高さ[pixel]
      */
-    void GlobalDrawer::setScreen(const std::int32_t w, const std::int32_t h)
+    void GlobalDrawer::resize(const std::int32_t w, const std::int32_t h)
     {
         this->m_width = w;
         this->m_height = h;
     }
 
     /**
-     * @brief シェーダプログラムを取得
+     * @brief フレームバッファサイズの変更
      * 
-     * @return Shader シェーダプログラム
+     * @param [in] w フレームバッファ幅[pixel]
+     * @param [in] h フレームバッファ高さ[pixel]
      */
-    Shader GlobalDrawer::getShader() const
+    void GlobalDrawer::changeFramebufferSize(const std::int32_t w, const std::int32_t h)
     {
-        return this->m_shader.getShader();
+        this->m_fbwidth = w;
+        this->m_fbHeight = h;
+    }
+
+    /**
+     * @brief 拡大率の変更
+     * 
+     * @param [in] scale 拡大率
+     */
+    void GlobalDrawer::changeScale(const float scale)
+    {
+        this->m_scale = scale;
+    }
+
+    /**
+     * @brief フレームバッファサイズを取得
+     * 
+     * @param [out] w フレームバッファ幅[pixel]
+     * @param [out] h フレームバッファ高さ[pixel]
+     */
+    void GlobalDrawer::getFramebufferSize(std::int32_t* w, std::int32_t* h) const
+    {
+        *w = this->m_fbwidth;
+        *h = this->m_fbHeight;
     }
 }

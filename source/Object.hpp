@@ -35,7 +35,7 @@ namespace my {
         //! コンストラクタ
         Shape(const GLenum mode, const Vertexes& vertexes, const Indexes& indexes, const Colors& colors);
         //! デストラクタ
-        ~Shape();
+        virtual ~Shape();
 
         //! コピーコンストラクタによるコピー禁止
         Shape(const Shape& org) = delete;
@@ -44,7 +44,7 @@ namespace my {
 
     public:
         //! 描画
-        void draw();
+        virtual void draw();
     };
 }
 

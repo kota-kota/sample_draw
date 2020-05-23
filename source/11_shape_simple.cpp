@@ -12,7 +12,7 @@
 
 namespace {
     //! ウインドウタイトル・幅・高さ
-    constexpr char* WIN_TITLE = "11_rectangle";
+    constexpr char* WIN_TITLE = "11_shape_simple";
     constexpr std::int32_t WIN_W = 640;
     constexpr std::int32_t WIN_H = 480;
 
@@ -80,43 +80,44 @@ namespace {
 namespace {
     //! 画面クラス
     class Screen {
-        std::int32_t    m_width;
-        std::int32_t    m_height;
+        GLFWwindow*     m_window;
         my::Color       m_bgcolor;
         my::Shape       m_rect;
 
-    private:
-        //! デフォルトコンストラクタ
-        Screen() :
-            m_width(WIN_W), m_height(WIN_H),
+    public:
+        //! コンストラクタ
+        Screen(GLFWwindow* window) :
+            m_window(window),
             m_bgcolor(DEFCOLOR[0], DEFCOLOR[1], DEFCOLOR[2], DEFCOLOR[3]),
             m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C)
         {
-        }
-
-    public:
-        //! インスタンスを取得
-        static Screen& instance() {
-            static Screen ins;
-            return ins;
+            // 画面サイズを変更
+            std::int32_t width, height; 
+            glfwGetWindowSize(window, &width, &height);
+            this->resize(width, height);
         }
 
     public:
         //! 描画実行
-        void draw(GLFWwindow* const window)
+        void draw()
         {
             this->clear();
             this->setup();
             this->draw_rectangle();
-            glfwSwapBuffers(window);
+            glfwSwapBuffers(m_window);
         }
 
     public:
-        //! 画面サイズ変更
+        //! 画面サイズを変更
         void resize(const std::int32_t w, const std::int32_t h)
         {
-            this->m_width = w;
-            this->m_height = h;
+            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
+            // 画面サイズを変更する
+            g_drawer.resize(w, h);
+            // フレームバッファサイズを変更する
+            std::int32_t fbWidth, fbHeight;
+            glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
+            g_drawer.changeFramebufferSize(fbWidth, fbHeight);
         }
 
     private:
@@ -131,7 +132,12 @@ namespace {
         //! セットアップ
         void setup()
         {
-            glViewport(0, 0, m_width, m_height);
+            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
+
+            // ビューポートの設定
+            std::int32_t fbWidth, fbHeight;
+            g_drawer.getFramebufferSize(&fbWidth, &fbHeight);
+            glViewport(0, 0, fbWidth, fbHeight);
         }
 
     private:
@@ -154,9 +160,13 @@ namespace {
     void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
     {
         std::cout << "GLFW RESIZE -> w:" << width << " h:" << height << " (" << window << ")" << std::endl;
-        // 描画
-        Screen::instance().resize(width, height);
-        Screen::instance().draw(window);
+        // 画面インスタンスのポインタを取得する
+        Screen* screen = static_cast<Screen*>(glfwGetWindowUserPointer(window));
+        if (screen != nullptr) {
+            // 描画
+            screen->resize(width, height);
+            screen->draw();
+        }
     }
 }
 
@@ -210,16 +220,18 @@ int main()
     std::cout << "* GPU : "<< glGetString(GL_RENDERER) << std::endl;
     std::cout << "* OpenGL Ver. : " << glGetString(GL_VERSION) << std::endl;
 
-    // グローバル描画資源を生成
-    my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
-    g_drawer.setScreen(WIN_W, WIN_H);
+    // 画面の生成
+    Screen screen(window);
+
+    // 画面インスタンスのポインタを保持する
+    glfwSetWindowUserPointer(window, &screen);
 
     // ウィンドウが開いている間繰り返す
     Timer timer(1.0 / FPS);
     while (glfwWindowShouldClose(window) == GL_FALSE) {
         if (timer.isTime()) {
             // 描画
-            Screen::instance().draw(window);
+            screen.draw();
             timer.next();
 
             // ウィンドウタイトルにFPSを表示する

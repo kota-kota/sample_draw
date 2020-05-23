@@ -64,7 +64,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release")
 add_subdirectory(00_window_create)
 add_subdirectory(01_window_event)
 add_subdirectory(10_clear)
-add_subdirectory(11_rectangle)
+add_subdirectory(11_shape_simple)
 
 #CMakeで設定されている全ての変数を出力する
 #DumpCMakeVariables()

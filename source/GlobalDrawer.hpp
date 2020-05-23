@@ -13,23 +13,46 @@
 #include <GL/glew.h>
 
 #include <cstdint>
+#include <string>
 
 namespace my {
     /**
      * @class Shader
-     * @brief シェーダプログラムを扱うクラス
+     * @brief シェーダのプログラムを扱う抽象クラス
      * 
      */
     class Shader {
+    protected:
+        GLuint  m_progid;   //!< シェーダプログラムID
+
+    public:
+        //! デフォルトコンストラクタ
+        Shader();
+        //! コンストラクタ
+        Shader(const GLuint progid);
+
+    public:
+        //! シェーダプログラムを取得
+        GLuint getProgram() const;
+    };
+}
+
+namespace my {
+    /**
+     * @class ShaderShape11
+     * @brief 11_shapeシェーダのプログラムを扱うクラス
+     * 
+     */
+    class Shader_11ShapeSimple {
         GLuint  m_progid;   //!< シェーダプログラムID
         GLint   m_loc_pos;  //!< 頂点のattribute位置
         GLint   m_loc_col;  //!< 色のattribute位置
 
     public:
         //! デフォルトコンストラクタ
-        Shader();
+        Shader_11ShapeSimple();
         //! コンストラクタ
-        Shader(const GLuint progid, const GLint loc_pos, const GLint loc_col);
+        Shader_11ShapeSimple(const GLuint progid, const GLint loc_pos, const GLint loc_col);
 
     public:
         //! シェーダプログラムを取得
@@ -43,33 +66,39 @@ namespace my {
 
 namespace my {
     /**
-     * @class ShaderCompiler
-     * @brief シェーダをコンパイルするクラス
+     * @class ShaderBuilder
+     * @brief シェーダをビルドおよび管理するクラス
      */
-    class ShaderCompiler {
-        Shader  m_shader;   //!< シェーダプログラム
+    class ShaderBuilder {
+        Shader_11ShapeSimple  m_11_shape_simple;   //!< 11_shape_simpleシェーダのプログラム
 
     public:
         //! デフォルトコンストラクタ
-        ShaderCompiler();
+        ShaderBuilder();
         //! デストラクタ
-        ~ShaderCompiler();
+        ~ShaderBuilder();
         //! コピーコンストラクタによるコピー禁止
-        ShaderCompiler(const ShaderCompiler& org) = delete;
+        ShaderBuilder(const ShaderBuilder& org) = delete;
         //! 代入によるコピー禁止
-        ShaderCompiler& operator=(const ShaderCompiler& org) = delete;
+        ShaderBuilder& operator=(const ShaderBuilder& org) = delete;
 
     public:
-        //! シェーダプログラムの取得
-        Shader getShader() const;
+        //! 11_shape_simpleシェーダのプログラムの取得
+        Shader_11ShapeSimple getShader_11ShapeSimple() const;
 
     private:
+        //! 11_shape_simpleシェーダの読み込み
+        void loadShader_11ShapeSimple();
+
+    private:
+        //! シェーダソースをファイル読み込み
+        std::string readShaderSource(const std::string srcpath);
         //! シェーダプログラムの作成
-        GLuint createProgram(const char *vsrc, const char *fsrc);
+        GLuint createProgram(const std::string& vsrc, const std::string& fsrc);
 
     private:
         //! シェーダのコンパイルログを出力
-        void printShaderLog(GLuint shader);
+        void printShaderLog(const GLuint shader);
     };
 }
 
@@ -79,9 +108,12 @@ namespace my {
      * @brief グローバルな描画資源を扱うクラス(シングルトン)
      */
     class GlobalDrawer {
-        std::int32_t    m_width;    //!< 画面幅[pixel]
-        std::int32_t    m_height;   //!< 画面高さ[pixel]
-        ShaderCompiler  m_shader;   //!< シェーダ
+        std::int32_t    m_width;            //!< 画面幅[pixel]
+        std::int32_t    m_height;           //!< 画面高さ[pixel]
+        std::int32_t    m_fbwidth;          //!< フレームバッファ幅[pixel]
+        std::int32_t    m_fbHeight;         //!< フレームバッファ高さ[pixel]
+        float           m_scale;            //!< 拡大率
+        ShaderBuilder   m_shaderbuilder;    //!< シェーダビルダーインスタンス
 
     private:
         //! デフォルトコンストラクタ
@@ -98,12 +130,20 @@ namespace my {
         static GlobalDrawer& instance();
 
     public:
-        //! 画面幅高さを設定
-        void setScreen(const std::int32_t w, const std::int32_t h);
+        //! 11_shape_simpleシェーダのプログラムを取得
+        Shader_11ShapeSimple getShader_11ShapeSimple() const;
 
     public:
-        //! シェーダプログラムを取得
-        Shader getShader() const;
+        //! 画面サイズの変更
+        void resize(const std::int32_t w, const std::int32_t h);
+        //! フレームバッファサイズの変更
+        void changeFramebufferSize(const std::int32_t w, const std::int32_t h);
+        //! 拡大率の変更
+        void changeScale(const float scale);
+
+    public:
+        //! フレームバッファサイズを取得
+        void getFramebufferSize(std::int32_t* w, std::int32_t* h) const;
     };
 }
 
