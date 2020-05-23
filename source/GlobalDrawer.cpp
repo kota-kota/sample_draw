@@ -100,8 +100,8 @@ namespace my {
      */
     void ShaderBuilder::loadShader_11ShapeSimple()
     {
-        const std::string vsrc = readShaderSource("C:\\workspace\\sample_draw\\source\\shader\\11_shape_simple.vert");
-        const std::string fsrc = readShaderSource("C:\\workspace\\sample_draw\\source\\shader\\11_shape_simple.frag");
+        const std::string vsrc = readShaderSource(".\\shader\\11_shape_simple.vert");
+        const std::string fsrc = readShaderSource(".\\shader\\11_shape_simple.frag");
         if ((!vsrc.empty()) && (!fsrc.empty())) {
             GLuint progid = createProgram(vsrc, fsrc);
             GLint loc_pos = glGetAttribLocation(progid, "position");

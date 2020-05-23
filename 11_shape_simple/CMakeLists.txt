@@ -19,8 +19,6 @@ set(SRCS
 	${CMAKE_SOURCE_DIR}/source/11_shape_simple.cpp
 	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.hpp
 	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.cpp
-	${CMAKE_SOURCE_DIR}/source/Object.hpp
-	${CMAKE_SOURCE_DIR}/source/Object.cpp
 	${CMAKE_SOURCE_DIR}/source/Vertex.hpp
 	${CMAKE_SOURCE_DIR}/source/Vertex.cpp
 )
@@ -53,6 +51,15 @@ link_directories(${LIB_PATH})
 add_executable(${PROJECT_NAME} ${SRCS})
 #リンク
 target_link_libraries(${PROJECT_NAME} ${LIBS})
+
+#ビルド後イベント
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/source/shader/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/shader
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/source/shader/ ${CMAKE_CURRENT_BINARY_DIR}/shader
+  COMMENT "Copy shader sources"
+)
 
 #CMakeで設定されている全ての変数を出力する
 #DumpCMakeVariables()

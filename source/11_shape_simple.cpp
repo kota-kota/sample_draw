@@ -1,6 +1,5 @@
 ﻿#include "Vertex.hpp"
 #include "GlobalDrawer.hpp"
-#include "Object.hpp"
 
 #include <GLFW/glfw3.h>
 #include <GL/glew.h>
@@ -37,6 +36,97 @@ namespace {
         { 255, 0, 0, 255 },
         { 255, 0, 0, 255 },
         { 255, 0, 0, 255 },
+    };
+}
+
+namespace {
+    //! 形状
+    class Shape {
+    protected:
+        GLuint          m_vao;          //!< 頂点配列オブジェクト
+        GLuint          m_vertex_vbo;   //!< 頂点用のバッファオブジェクト
+        GLuint          m_index_vbo;    //!< 頂点インデックス用のバッファオブジェクト
+        GLenum          m_mode;         //!< 描画モード
+        my::Vertexes    m_vertexes;     //!< 頂点座標の並び
+        my::Indexes     m_indexes;      //!< 頂点インデックスの並び
+        my::Colors      m_colors;       //!< 頂点色の並び
+
+    public:
+        //! コンストラクタ
+        Shape::Shape(const GLenum mode, const my::Vertexes& vertexes, const my::Indexes& indexes, const my::Colors& colors) :
+            m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U), m_mode(mode), m_vertexes(vertexes), m_indexes(indexes), m_colors(colors)
+        {
+            // 頂点配列オブジェクトを作成する
+            glGenVertexArrays(1, &this->m_vao);
+            std::cout << "* VAO:" << m_vao << std::endl;
+            glBindVertexArray(this->m_vao);
+
+            // 頂点用のバッファオブジェクトを作成する
+            glGenBuffers(1, &this->m_vertex_vbo);
+            std::cout << "* VBO V:" << m_vertex_vbo << std::endl;
+            glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
+            const std::int32_t vsize = static_cast<std::int32_t>(vertexes.size() * sizeof(my::Vertex));
+            const std::int32_t csize = static_cast<std::int32_t>(colors.size() * sizeof(my::Color));
+            glBufferData(GL_ARRAY_BUFFER, vsize * csize, nullptr, GL_DYNAMIC_DRAW);
+            // 頂点データを転送する
+            glBufferSubData(GL_ARRAY_BUFFER, 0, vsize, &vertexes[0]);
+            // 色データを転送する
+            glBufferSubData(GL_ARRAY_BUFFER, vsize, csize, &colors[0]);
+
+            // 頂点インデックス用のバッファオブジェクトを作成する
+            glGenBuffers(1, &this->m_index_vbo);
+            std::cout << "* VBO I:" << m_index_vbo << std::endl;
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
+            const std::int32_t isize = static_cast<std::int32_t>(indexes.size() * sizeof(GLuint));
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize, nullptr, GL_DYNAMIC_DRAW);
+            // 頂点インデックスデータを転送する
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, isize, &indexes[0]);
+        }
+
+        //! デストラクタ
+        ~Shape()
+        {
+            // 頂点配列オブジェクトを破棄する
+            glDeleteVertexArrays(1, &this->m_vao);
+            // 頂点用のバッファオブジェクトを破棄する
+            glDeleteBuffers(1, &this->m_vertex_vbo);
+            // 頂点インデックス用のバッファオブジェクトを破棄する
+            glDeleteBuffers(1, &this->m_index_vbo);
+        }
+
+        //! コピーコンストラクタによるコピー禁止
+        Shape(const Shape& org) = delete;
+        //! 代入によるコピー禁止
+        Shape& operator=(const Shape& org) = delete;
+
+    public:
+        //! 描画
+        void draw()
+        {
+            // シェーダ取得
+            my::Shader_11ShapeSimple shader = my::GlobalDrawer::instance().getShader_11ShapeSimple();
+            const GLuint prog = shader.getProgram();
+            const GLint pos_loc = shader.getPositionLocation();
+            const GLint col_loc = shader.getColorLocation();
+
+            // シェーダプログラムを指定
+            glUseProgram(prog);
+
+            // 頂点配列オブジェクトの結合
+            glBindVertexArray(this->m_vao);
+            glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
+            // 頂点データを指定
+            glVertexAttribPointer(pos_loc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+            glEnableVertexAttribArray(pos_loc);
+            // 色データを指定
+            glVertexAttribPointer(col_loc, 4, GL_UNSIGNED_BYTE, GL_FALSE, 0, (GLubyte*)(this->m_vertexes.size() * sizeof(my::Vertex)));
+            glEnableVertexAttribArray(col_loc);
+
+            // 描画実行
+            GLsizei icnt = static_cast<GLsizei>(this->m_indexes.size());
+            glDrawElements(this->m_mode, icnt, GL_UNSIGNED_INT, nullptr);
+        }
     };
 }
 
@@ -82,7 +172,7 @@ namespace {
     class Screen {
         GLFWwindow*     m_window;
         my::Color       m_bgcolor;
-        my::Shape       m_rect;
+        Shape           m_rect;
 
     public:
         //! コンストラクタ
