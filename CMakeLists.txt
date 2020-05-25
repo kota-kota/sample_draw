@@ -65,6 +65,7 @@ add_subdirectory(00_window_create)
 add_subdirectory(01_window_event)
 add_subdirectory(10_clear)
 add_subdirectory(11_shape_simple)
+add_subdirectory(12_shape_mvp)
 
 #CMakeで設定されている全ての変数を出力する
 #DumpCMakeVariables()

@@ -34,7 +34,7 @@ namespace my {
     Shader_11ShapeSimple::Shader_11ShapeSimple(const GLuint progid, const GLint loc_pos, const GLint loc_col) :
         m_progid(progid), m_loc_pos(loc_pos), m_loc_col(loc_col)
     {
-        std::cout << "Shader_11ShapeSimple progId:" << progid << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+        std::cout << "[Shader_11ShapeSimple::Shader_11ShapeSimple()] progId:" << progid << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
     }
 
     /**
@@ -66,13 +66,72 @@ namespace my {
     /**
      * @brief デフォルトコンストラクタ
      * 
+     */
+    Shader_12ShapeMVP::Shader_12ShapeMVP() :
+        m_progid(0U), m_loc_model(-1), m_loc_pos(-1), m_loc_col(-1)
+    {
+    }
+
+    /**
+     * @brief コンストラクタ
+     * 
+     * @param [in] progid シェーダプログラムID
+     * @param [in] loc_model モデル変換行列のuniform位置
+     * @param [in] loc_pos 頂点のattribute位置
+     * @param [in] loc_col 色のattribute位置
+     */
+    Shader_12ShapeMVP::Shader_12ShapeMVP(const GLuint progid, const GLint loc_model, const GLint loc_pos, const GLint loc_col) :
+        m_progid(progid), m_loc_model(loc_model), m_loc_pos(loc_pos), m_loc_col(loc_col)
+    {
+        std::cout << "[Shader_12ShapeMVP::Shader_12ShapeMVP()] progId:" << progid << " loc_model:" << loc_model << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+    }
+
+    /**
+     * @brief シェーダプログラムを取得
+     * 
+     * @retval 0 異常
+     * @retval >0 正常
+     */
+    GLuint Shader_12ShapeMVP::getProgram() const { return this->m_progid; }
+
+    /**
+     * @brief モデル変換行列のunifrom位置を取得
+     * 
+     * @retval -1 異常
+     * @retval >=0 正常
+     */
+    GLint Shader_12ShapeMVP::getModelLocation() const { return this->m_loc_model; }
+
+    /**
+     * @brief 頂点のattribute位置を取得
+     * 
+     * @retval -1 異常
+     * @retval >=0 正常
+     */
+    GLint Shader_12ShapeMVP::getPositionLocation() const { return this->m_loc_pos; }
+
+    /**
+     * @brief 色のattribute位置を取得
+     * 
+     * @retval -1 異常
+     * @retval >=0 正常
+     */
+    GLint Shader_12ShapeMVP::getColorLocation() const { return this->m_loc_col; }
+}
+
+namespace my {
+    /**
+     * @brief デフォルトコンストラクタ
+     * 
      * @par 詳細
      *      シェーダプログラムを作成する。
      */
     ShaderBuilder::ShaderBuilder() :
-        m_11_shape_simple()
+        m_11_shape_simple(), m_12_shape_mvp()
     {
+        std::cout << "[ShaderBuilder::ShaderBuilder()] call" << std::endl;
         loadShader_11ShapeSimple();
+        loadShader_12ShapeMVP();
     }
 
     /**
@@ -83,7 +142,9 @@ namespace my {
      */
     ShaderBuilder::~ShaderBuilder()
     {
+        std::cout << "[ShaderBuilder::~ShaderBuilder()] call" << std::endl;
         glDeleteProgram(this->m_11_shape_simple.getProgram());
+        glDeleteProgram(this->m_12_shape_mvp.getProgram());
     }
 
     /**
@@ -95,11 +156,20 @@ namespace my {
     Shader_11ShapeSimple ShaderBuilder::getShader_11ShapeSimple() const { return this->m_11_shape_simple; }
 
     /**
+     * @brief 12_shape_mvpシェーダのプログラムの取得
+     * 
+     * @par 詳細
+     *      12_shape_mvpシェーダのプログラムを取得する。
+     */
+    Shader_12ShapeMVP ShaderBuilder::getShader_12ShapeMVP() const { return this->m_12_shape_mvp; }
+
+    /**
      * @brief 11_shape_simpleシェーダの読み込み
      * 
      */
     void ShaderBuilder::loadShader_11ShapeSimple()
     {
+        std::cout << "[ShaderBuilder::loadShader_11ShapeSimple()] call" << std::endl;
         const std::string vsrc = readShaderSource(".\\shader\\11_shape_simple.vert");
         const std::string fsrc = readShaderSource(".\\shader\\11_shape_simple.frag");
         if ((!vsrc.empty()) && (!fsrc.empty())) {
@@ -107,6 +177,24 @@ namespace my {
             GLint loc_pos = glGetAttribLocation(progid, "position");
             GLint loc_col = glGetAttribLocation(progid, "color");
             this->m_11_shape_simple = Shader_11ShapeSimple(progid, loc_pos, loc_col);
+        }
+    }
+
+    /**
+     * @brief 12_shape_mvpシェーダの読み込み
+     * 
+     */
+    void ShaderBuilder::loadShader_12ShapeMVP()
+    {
+        std::cout << "[ShaderBuilder::loadShader_12ShapeMVP()] call" << std::endl;
+        const std::string vsrc = readShaderSource(".\\shader\\12_shape_mvp.vert");
+        const std::string fsrc = readShaderSource(".\\shader\\12_shape_mvp.frag");
+        if ((!vsrc.empty()) && (!fsrc.empty())) {
+            GLuint progid = createProgram(vsrc, fsrc);
+            GLint loc_model = glGetUniformLocation(progid, "model");
+            GLint loc_pos = glGetAttribLocation(progid, "position");
+            GLint loc_col = glGetAttribLocation(progid, "color");
+            this->m_12_shape_mvp = Shader_12ShapeMVP(progid, loc_model, loc_pos, loc_col);
         }
     }
 
@@ -122,6 +210,7 @@ namespace my {
      */
     std::string ShaderBuilder::readShaderSource(const std::string srcpath)
     {
+        std::cout << "[ShaderBuilder::readShaderSource()] call" << std::endl;
         if (srcpath.empty()) {
             return std::string();
         }
@@ -129,10 +218,11 @@ namespace my {
         std::ifstream file(srcpath);
         if (file.fail()) {
             // 開けなかった
-            std::cerr << "Shader::readShaderSource() .. Failed to open " << srcpath << std::endl;
+            std::cerr << "* Open " << srcpath << " .. NG" << std::endl;
             return std::string();
         }
         // 読み込み成功
+        std::cerr << "* Open " << srcpath << " .. OK" << std::endl;
         return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
     }
 
@@ -149,6 +239,7 @@ namespace my {
      */
     GLuint ShaderBuilder::createProgram(const std::string& vsrc, const std::string& fsrc)
     {
+        std::cout << "[ShaderBuilder::createProgram()] call" << std::endl;
         // 空のプログラムオブジェクトを作成する
         const GLuint program = glCreateProgram();
         if (!vsrc.empty()) {
@@ -162,12 +253,12 @@ namespace my {
             glGetShaderiv(vobj, GL_COMPILE_STATUS, &retCompiled);
             if(retCompiled == GL_FALSE) {
                 //作成失敗
-                std::cerr << "glCompileShader() vobj:" << vobj << " .. NG" << std::endl;
+                std::cerr << "* glCompileShader() vobj:" << vobj << " .. NG" << std::endl;
                 printShaderLog(vobj);
                 glDeleteProgram(program);
                 return 0;
             }
-            std::cout << "glCompileShader() vobj:" << vobj << " .. OK" << std::endl;
+            std::cout << "* glCompileShader() vobj:" << vobj << " .. OK" << std::endl;
             // バーテックスシェーダのシェーダオブジェクトをプログラムオブジェクトに組み込む
             glAttachShader(program, vobj);
             glDeleteShader(vobj);
@@ -183,12 +274,12 @@ namespace my {
             glGetShaderiv(fobj, GL_COMPILE_STATUS, &retCompiled);
             if(retCompiled == GL_FALSE) {
                 //作成失敗
-                std::cerr << "glCompileShader() fobj:" << fobj << " .. NG" << std::endl;
+                std::cerr << "* glCompileShader() fobj:" << fobj << " .. NG" << std::endl;
                 printShaderLog(fobj);
                 glDeleteProgram(program);
                 return 0;
             }
-            std::cout << "glCompileShader() fobj:" << fobj << " .. OK" << std::endl;
+            std::cout << "* glCompileShader() fobj:" << fobj << " .. OK" << std::endl;
             // フラグメントシェーダのシェーダオブジェクトをプログラムオブジェクトに組み込む
             glAttachShader(program, fobj);
             glDeleteShader(fobj);
@@ -200,12 +291,12 @@ namespace my {
         glGetProgramiv(program, GL_LINK_STATUS, &retLinked);
         if(retLinked == GL_FALSE) {
             //失敗
-            std::cerr << "glLinkProgram() program:" << program << " .. NG" << std::endl;
+            std::cerr << "* glLinkProgram() program:" << program << " .. NG" << std::endl;
             printShaderLog(program);
             glDeleteProgram(program);
             return 0;
         }
-        std::cout << "glLinkProgram() program:" << program << " .. OK" << std::endl;
+        std::cout << "* glLinkProgram() program:" << program << " .. OK" << std::endl;
 
         // 作成したプログラムオブジェクトを返す
         return program;
@@ -242,6 +333,7 @@ namespace my {
     GlobalDrawer::GlobalDrawer() :
         m_width(0), m_height(0), m_fbwidth(0), m_fbHeight(0), m_scale(0.0F), m_shaderbuilder()
     {
+        std::cout << "[GlobalDrawer::GlobalDrawer()] call" << std::endl;
     }
 
     /**
@@ -255,13 +347,13 @@ namespace my {
     }
 
     /**
-     * @brief 11_shape_simpleシェーダのプログラムを取得
+     * @brief ShaderBuilderインスタンスを取得
      * 
-     * @return Shader_11ShapeSimple 11_shape_simpleシェーダのプログラム
+     * @return ShaderBuilder ShaderBuilderインスタンス
      */
-    Shader_11ShapeSimple GlobalDrawer::getShader_11ShapeSimple() const
+    ShaderBuilder& GlobalDrawer::getShaderBuilder()
     {
-        return this->m_shaderbuilder.getShader_11ShapeSimple();
+        return this->m_shaderbuilder;
     }
 
     /**
@@ -272,6 +364,7 @@ namespace my {
      */
     void GlobalDrawer::resize(const std::int32_t w, const std::int32_t h)
     {
+        std::cout << "[GlobalDrawer::resize()] w:" << w << " h:" << h << std::endl;
         this->m_width = w;
         this->m_height = h;
     }
@@ -284,6 +377,7 @@ namespace my {
      */
     void GlobalDrawer::changeFramebufferSize(const std::int32_t w, const std::int32_t h)
     {
+        std::cout << "[GlobalDrawer::changeFramebufferSize()] w:" << w << " h:" << h << std::endl;
         this->m_fbwidth = w;
         this->m_fbHeight = h;
     }
@@ -295,6 +389,7 @@ namespace my {
      */
     void GlobalDrawer::changeScale(const float scale)
     {
+        std::cout << "[GlobalDrawer::changeScale()] scale:" << scale << std::endl;
         this->m_scale = scale;
     }
 

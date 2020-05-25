@@ -17,30 +17,8 @@
 
 namespace my {
     /**
-     * @class Shader
-     * @brief シェーダのプログラムを扱う抽象クラス
-     * 
-     */
-    class Shader {
-    protected:
-        GLuint  m_progid;   //!< シェーダプログラムID
-
-    public:
-        //! デフォルトコンストラクタ
-        Shader();
-        //! コンストラクタ
-        Shader(const GLuint progid);
-
-    public:
-        //! シェーダプログラムを取得
-        GLuint getProgram() const;
-    };
-}
-
-namespace my {
-    /**
-     * @class ShaderShape11
-     * @brief 11_shapeシェーダのプログラムを扱うクラス
+     * @class Shader_11ShapeSimple
+     * @brief 11_shape_simpleシェーダのプログラムを扱うクラス
      * 
      */
     class Shader_11ShapeSimple {
@@ -66,11 +44,42 @@ namespace my {
 
 namespace my {
     /**
+     * @class Shader_12ShapeMVP
+     * @brief 12_shape_mvpシェーダのプログラムを扱うクラス
+     * 
+     */
+    class Shader_12ShapeMVP {
+        GLuint  m_progid;       //!< シェーダプログラムID
+        GLint   m_loc_model;    //!< モデル変換行列のunifrom位置
+        GLint   m_loc_pos;      //!< 頂点のattribute位置
+        GLint   m_loc_col;      //!< 色のattribute位置
+
+    public:
+        //! デフォルトコンストラクタ
+        Shader_12ShapeMVP();
+        //! コンストラクタ
+        Shader_12ShapeMVP(const GLuint progid, const GLint loc_model, const GLint loc_pos, const GLint loc_col);
+
+    public:
+        //! シェーダプログラムを取得
+        GLuint getProgram() const;
+        //! モデル変換行列のunifrom位置を取得
+        GLint getModelLocation() const;
+        //! 頂点のattribute位置を取得
+        GLint getPositionLocation() const;
+        //! 色のattribute位置を取得
+        GLint getColorLocation() const;
+    };
+}
+
+namespace my {
+    /**
      * @class ShaderBuilder
      * @brief シェーダをビルドおよび管理するクラス
      */
     class ShaderBuilder {
-        Shader_11ShapeSimple  m_11_shape_simple;   //!< 11_shape_simpleシェーダのプログラム
+        Shader_11ShapeSimple    m_11_shape_simple;  //!< 11_shape_simpleシェーダのプログラム
+        Shader_12ShapeMVP       m_12_shape_mvp;     //!< 12_shape_mvpシェーダのプログラム
 
     public:
         //! デフォルトコンストラクタ
@@ -85,10 +94,14 @@ namespace my {
     public:
         //! 11_shape_simpleシェーダのプログラムの取得
         Shader_11ShapeSimple getShader_11ShapeSimple() const;
+        //! 12_shape_mvpシェーダのプログラムの取得
+        Shader_12ShapeMVP getShader_12ShapeMVP() const;
 
     private:
         //! 11_shape_simpleシェーダの読み込み
         void loadShader_11ShapeSimple();
+        //! 12_shape_mvpシェーダの読み込み
+        void loadShader_12ShapeMVP();
 
     private:
         //! シェーダソースをファイル読み込み
@@ -130,8 +143,8 @@ namespace my {
         static GlobalDrawer& instance();
 
     public:
-        //! 11_shape_simpleシェーダのプログラムを取得
-        Shader_11ShapeSimple getShader_11ShapeSimple() const;
+        //! ShaderBuilderインスタンスを取得
+        ShaderBuilder& getShaderBuilder();
 
     public:
         //! 画面サイズの変更
