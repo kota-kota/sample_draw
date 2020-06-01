@@ -53,16 +53,17 @@ namespace {
     public:
         //! コンストラクタ
         Shape::Shape(const GLenum mode, const my::Vertexes& vertexes, const my::Indexes& indexes, const my::Colors& colors) :
-            m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U), m_mode(mode), m_vertexes(vertexes), m_indexes(indexes), m_colors(colors)
+            m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U),
+            m_mode(mode), m_vertexes(vertexes), m_indexes(indexes), m_colors(colors)
         {
+            std::cout << "[Shape::Shape()] call" << std::endl;
             // 頂点配列オブジェクトを作成する
             glGenVertexArrays(1, &this->m_vao);
-            std::cout << "* VAO:" << m_vao << std::endl;
             glBindVertexArray(this->m_vao);
+            std::cout << "* VAO id:" << m_vao << std::endl;
 
             // 頂点用のバッファオブジェクトを作成する
             glGenBuffers(1, &this->m_vertex_vbo);
-            std::cout << "* VBO V:" << m_vertex_vbo << std::endl;
             glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
             const std::int32_t vsize = static_cast<std::int32_t>(vertexes.size() * sizeof(my::Vertex));
             const std::int32_t csize = static_cast<std::int32_t>(colors.size() * sizeof(my::Color));
@@ -71,20 +72,22 @@ namespace {
             glBufferSubData(GL_ARRAY_BUFFER, 0, vsize, &vertexes[0]);
             // 色データを転送する
             glBufferSubData(GL_ARRAY_BUFFER, vsize, csize, &colors[0]);
+            std::cout << "* VBO(Vertex) id:" << m_vertex_vbo << " vertex size:" << vsize << " color size:" << csize << std::endl;
 
             // 頂点インデックス用のバッファオブジェクトを作成する
             glGenBuffers(1, &this->m_index_vbo);
-            std::cout << "* VBO I:" << m_index_vbo << std::endl;
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
             const std::int32_t isize = static_cast<std::int32_t>(indexes.size() * sizeof(GLuint));
             glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize, nullptr, GL_DYNAMIC_DRAW);
             // 頂点インデックスデータを転送する
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, isize, &indexes[0]);
+            std::cout << "* VBO(Index) id:" << m_index_vbo << "index size:" << isize << std::endl;
         }
 
         //! デストラクタ
         ~Shape()
         {
+            std::cout << "[Shape::~Shape()] call" << std::endl;
             // 頂点配列オブジェクトを破棄する
             glDeleteVertexArrays(1, &this->m_vao);
             // 頂点用のバッファオブジェクトを破棄する
@@ -169,71 +172,53 @@ namespace {
 namespace {
     //! 画面クラス
     class Screen {
-        GLFWwindow*     m_window;
-        my::Color       m_bgcolor;
-        Shape           m_rect;
+        GLFWwindow*     m_window;           //!< ウィンドウ
+        std::int32_t    m_width;            //!< 画面幅[pixel]
+        std::int32_t    m_height;           //!< 画面高さ[pixel]
+        std::int32_t    m_fbWidth;          //!< フレームバッファ幅[pixel]
+        std::int32_t    m_fbHeight;         //!< フレームバッファ高さ[pixel]
+        float           m_scale;            //!< 拡大率
+        my::Color       m_bgcolor;          //!< 背景色
+        Shape           m_rect;             //!< 矩形
 
     public:
         //! コンストラクタ
         Screen(GLFWwindow* window) :
-            m_window(window),
+            m_window(window), m_width(0), m_height(0), m_fbWidth(0), m_fbHeight(0), m_scale(100.0F),
             m_bgcolor(DEFCOLOR[0], DEFCOLOR[1], DEFCOLOR[2], DEFCOLOR[3]),
             m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C)
         {
-            // 画面サイズを変更
-            std::int32_t width, height; 
-            glfwGetWindowSize(window, &width, &height);
-            this->resize(width, height);
-        }
-
-    public:
-        //! 描画実行
-        void draw()
-        {
-            this->clear();
-            this->setup();
-            this->draw_rectangle();
-            glfwSwapBuffers(m_window);
+            std::cout << "[Screen::Screen()] call" << std::endl;
+            // 画面サイズを取得する
+            glfwGetWindowSize(m_window, &m_width, &m_height);
+            // フレームバッファサイズを取得する
+            glfwGetFramebufferSize(m_window, &m_fbWidth, &m_fbHeight);
         }
 
     public:
         //! 画面サイズを変更
         void resize(const std::int32_t w, const std::int32_t h)
         {
-            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
+            std::cout << "[Screen::resize()] call" << std::endl;
             // 画面サイズを変更する
-            g_drawer.resize(w, h);
+            m_width = w; m_height = h;
             // フレームバッファサイズを変更する
-            std::int32_t fbWidth, fbHeight;
-            glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
-            g_drawer.changeFramebufferSize(fbWidth, fbHeight);
+            glfwGetFramebufferSize(m_window, &m_fbWidth, &m_fbHeight);
         }
 
-    private:
-        //! 画面クリア
-        void clear()
+    public:
+        //! 描画実行
+        void draw()
         {
+            // 画面クリア
             glClearColor(m_bgcolor.clamp_r(), m_bgcolor.clamp_g(), m_bgcolor.clamp_b(), m_bgcolor.clamp_a());
             glClear(GL_COLOR_BUFFER_BIT);
-        }
-
-    private:
-        //! セットアップ
-        void setup()
-        {
-            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
-
             // ビューポートの設定
-            std::int32_t fbWidth, fbHeight;
-            g_drawer.getFramebufferSize(&fbWidth, &fbHeight);
-            glViewport(0, 0, fbWidth, fbHeight);
-        }
-
-    private:
-        //! 矩形描画
-        void draw_rectangle()
-        {
+            glViewport(0, 0, m_fbWidth, m_fbHeight);
+            // 矩形描画
             m_rect.draw();
+            // 画面更新
+            glfwSwapBuffers(m_window);
         }
     };
 }
@@ -242,13 +227,13 @@ namespace {
     //! GLFWでエラーが発生したときにコールされるコールバック関数
     static void glfw_error_callback(int error, const char* description)
     {
-        std::cerr << "glfw_error_callback() .. (" << error << ") " << description << std::endl;
+        std::cerr << "[GLFW ERROR] (" << error << ") " << description << std::endl;
     }
 
     //! GLFWでウィンドウのサイズが変更されたときに呼ばれるコールバック関数
     void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
     {
-        std::cout << "GLFW RESIZE -> w:" << width << " h:" << height << " (" << window << ")" << std::endl;
+        std::cout << "[GLFW RESIZE] w:" << width << " h:" << height << " (" << window << ")" << std::endl;
         // 画面インスタンスのポインタを取得する
         Screen* screen = static_cast<Screen*>(glfwGetWindowUserPointer(window));
         if (screen != nullptr) {
@@ -261,16 +246,17 @@ namespace {
 
 int main()
 {
+    std::cout << "[main] app start" << std::endl;
     // GLFWでエラーが発生したときにコールされる関数を登録する
     glfwSetErrorCallback(glfw_error_callback);
 
     // GLFWを初期化する
     if (glfwInit() == GL_FALSE) {
         // 失敗
-        std::cerr << "glfwInit() .. NG" << std::endl;
+        std::cerr << "* glfwInit() .. NG" << std::endl;
         return 1;
     }
-    std::cout << "glfwInit() .. OK" << std::endl;
+    std::cout << "* glfwInit() .. OK" << std::endl;
 
     // OpenGL ES 3.2 Core Profile を選択する
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
@@ -281,11 +267,11 @@ int main()
     GLFWwindow* const window = glfwCreateWindow(WIN_W, WIN_H, WIN_TITLE, nullptr, nullptr);
     if (window == nullptr) {
         // 失敗
-        std::cerr << "glfwCreateWindow() .. NG" << std::endl;
+        std::cerr << "* glfwCreateWindow() .. NG" << std::endl;
         glfwTerminate();
         return 1;
     }
-    std::cout << "glfwCreateWindow() .. OK (0x" << window << ")" << std::endl;
+    std::cout << "* glfwCreateWindow() .. OK (0x" << window << ")" << std::endl;
 
     // GLFWでウィンドウのサイズが変更されたときに呼ばれる関数を登録する
     glfwSetWindowSizeCallback(window, glfw_window_resize_callback);
@@ -297,14 +283,15 @@ int main()
     // GLEW を初期化する
     if (glewInit() != GLEW_OK) {
         // GLEW の初期化に失敗した
-        std::cerr << "glewInit() .. NG" << std::endl;
+        std::cerr << "* glewInit() .. NG" << std::endl;
         glfwDestroyWindow(window);
         glfwTerminate();
         return 1;
     }
-    std::cout << "glewInit() .. OK" << std::endl;
+    std::cout << "* glewInit() .. OK" << std::endl;
 
     // バージョン情報
+    std::cout << "[main] graphics info"<< glGetString(GL_VENDOR) << std::endl;
     std::cout << "* Vendor :"<< glGetString(GL_VENDOR) << std::endl;
     std::cout << "* GPU : "<< glGetString(GL_RENDERER) << std::endl;
     std::cout << "* OpenGL Ver. : " << glGetString(GL_VERSION) << std::endl;
@@ -336,5 +323,6 @@ int main()
     glfwDestroyWindow(window);
     glfwTerminate();
 
+    std::cout << "[main] app end" << std::endl;
     return 0;
 }

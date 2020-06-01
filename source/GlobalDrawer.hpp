@@ -49,22 +49,25 @@ namespace my {
      * 
      */
     class Shader_12ShapeMVP {
-        GLuint  m_progid;       //!< シェーダプログラムID
-        GLint   m_loc_model;    //!< モデル変換行列のunifrom位置
-        GLint   m_loc_pos;      //!< 頂点のattribute位置
-        GLint   m_loc_col;      //!< 色のattribute位置
+        GLuint  m_progid;           //!< シェーダプログラムID
+        GLint   m_loc_modelview;    //!< モデルビュー変換行列のunifrom位置
+        GLint   m_loc_projection;   //!< プロジェクション変換行列のunifrom位置
+        GLint   m_loc_pos;          //!< 頂点のattribute位置
+        GLint   m_loc_col;          //!< 色のattribute位置
 
     public:
         //! デフォルトコンストラクタ
         Shader_12ShapeMVP();
         //! コンストラクタ
-        Shader_12ShapeMVP(const GLuint progid, const GLint loc_model, const GLint loc_pos, const GLint loc_col);
+        Shader_12ShapeMVP(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col);
 
     public:
         //! シェーダプログラムを取得
         GLuint getProgram() const;
-        //! モデル変換行列のunifrom位置を取得
-        GLint getModelLocation() const;
+        //! モデルビュー変換行列のunifrom位置を取得
+        GLint getModelViewLocation() const;
+        //! プロジェクション変換行列のunifrom位置を取得
+        GLint getProjectionLocation() const;
         //! 頂点のattribute位置を取得
         GLint getPositionLocation() const;
         //! 色のattribute位置を取得
@@ -121,11 +124,6 @@ namespace my {
      * @brief グローバルな描画資源を扱うクラス(シングルトン)
      */
     class GlobalDrawer {
-        std::int32_t    m_width;            //!< 画面幅[pixel]
-        std::int32_t    m_height;           //!< 画面高さ[pixel]
-        std::int32_t    m_fbwidth;          //!< フレームバッファ幅[pixel]
-        std::int32_t    m_fbHeight;         //!< フレームバッファ高さ[pixel]
-        float           m_scale;            //!< 拡大率
         ShaderBuilder   m_shaderbuilder;    //!< シェーダビルダーインスタンス
 
     private:
@@ -145,18 +143,6 @@ namespace my {
     public:
         //! ShaderBuilderインスタンスを取得
         ShaderBuilder& getShaderBuilder();
-
-    public:
-        //! 画面サイズの変更
-        void resize(const std::int32_t w, const std::int32_t h);
-        //! フレームバッファサイズの変更
-        void changeFramebufferSize(const std::int32_t w, const std::int32_t h);
-        //! 拡大率の変更
-        void changeScale(const float scale);
-
-    public:
-        //! フレームバッファサイズを取得
-        void getFramebufferSize(std::int32_t* w, std::int32_t* h) const;
     };
 }
 

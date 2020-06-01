@@ -50,14 +50,15 @@ namespace {
         my::Vertexes    m_vertexes;     //!< 頂点座標の並び
         my::Indexes     m_indexes;      //!< 頂点インデックスの並び
         my::Colors      m_colors;       //!< 頂点色の並び
-        my::Matrix      m_model;        //!< モデル変換行列
+        my::Vector      m_pos;          //!< 描画位置
+        my::Vector      m_scale;        //!< 描画スケール
 
     public:
         //! コンストラクタ
         Shape::Shape(const GLenum mode, const my::Vertexes& vertexes, const my::Indexes& indexes, const my::Colors& colors) :
             m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U),
             m_mode(mode), m_vertexes(vertexes), m_indexes(indexes), m_colors(colors),
-            m_model(my::Matrix::identity())
+            m_pos({0.0F, 0.0F, 0.0F}), m_scale({1.0F, 1.0F, 1.0F})
         {
             std::cout << "[Shape::Shape()] call" << std::endl;
             // 頂点配列オブジェクトを作成する
@@ -105,24 +106,36 @@ namespace {
         Shape& operator=(const Shape& org) = delete;
 
     public:
-        //! モデル変換行列の設定
-        void setModelMatrix(const my::Matrix& model) { this->m_model = model; }
+        //! 描画位置の設定
+        void setPosition(const my::Vector& pos) { this->m_pos = pos; }
+
+        //! 描画スケールの設定
+        void setScale(const my::Vector& scale) { this->m_scale = scale; }
 
         //! 描画
-        void draw()
+        void draw(const my::Matrix& view, const my::Matrix& proj)
         {
             // シェーダ取得
             my::Shader_12ShapeMVP shader = my::GlobalDrawer::instance().getShaderBuilder().getShader_12ShapeMVP();
             const GLuint prog = shader.getProgram();
-            const GLint model_loc = shader.getModelLocation();
+            const GLint modelview_loc = shader.getModelViewLocation();
+            const GLint projection_loc = shader.getProjectionLocation();
             const GLint pos_loc = shader.getPositionLocation();
             const GLint col_loc = shader.getColorLocation();
 
             // シェーダプログラムを指定
             glUseProgram(prog);
 
-            // uniform 変数に値を設定する
-            glUniformMatrix4fv(model_loc, 1, GL_FALSE, m_model.data());
+            // モデルの配置（モデルビュー変換行列）
+            my::Matrix model = my::Matrix::translate(m_pos) * my::Matrix::scale(m_scale);
+            my::Matrix modelview = view * model;
+            modelview.transpose();
+            glUniformMatrix4fv(modelview_loc, 1, GL_FALSE, modelview.data());
+
+            // 投影変換（プロジェクション変換行列）
+            my::Matrix projection = proj;
+            projection.transpose();
+            glUniformMatrix4fv(projection_loc, 1, GL_FALSE, projection.data());
 
             // 頂点配列オブジェクトの結合
             glBindVertexArray(this->m_vao);
@@ -182,34 +195,27 @@ namespace {
 namespace {
     //! 画面クラス
     class Screen {
-        GLFWwindow*     m_window;
-        float           m_scale;
-        my::Color       m_bgcolor;
-        Shape           m_rect;
-        my::Matrix      m_rect_model;
+        GLFWwindow*     m_window;           //!< ウィンドウ
+        std::int32_t    m_width;            //!< 画面幅[pixel]
+        std::int32_t    m_height;           //!< 画面高さ[pixel]
+        std::int32_t    m_fbWidth;          //!< フレームバッファ幅[pixel]
+        std::int32_t    m_fbHeight;         //!< フレームバッファ高さ[pixel]
+        float           m_scale;            //!< 拡大率
+        my::Color       m_bgcolor;          //!< 背景色
+        Shape           m_rect;             //!< 矩形
 
     public:
         //! コンストラクタ
         Screen(GLFWwindow* window) :
-            m_window(window), m_scale(100.0F),
+            m_window(window), m_width(0), m_height(0), m_fbWidth(0), m_fbHeight(0), m_scale(100.0F),
             m_bgcolor(DEFCOLOR[0], DEFCOLOR[1], DEFCOLOR[2], DEFCOLOR[3]),
-            m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C), m_rect_model(my::Matrix::identity())
+            m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C)
         {
             std::cout << "[Screen::Screen()] call" << std::endl;
-            // 画面サイズを変更
-            std::int32_t width, height; 
-            glfwGetWindowSize(window, &width, &height);
-            this->resize(width, height);
-        }
-
-    public:
-        //! 描画実行
-        void draw()
-        {
-            this->clear();
-            this->setup();
-            this->draw_rectangle();
-            glfwSwapBuffers(m_window);
+            // 画面サイズを取得する
+            glfwGetWindowSize(m_window, &m_width, &m_height);
+            // フレームバッファサイズを取得する
+            glfwGetFramebufferSize(m_window, &m_fbWidth, &m_fbHeight);
         }
 
     public:
@@ -217,47 +223,35 @@ namespace {
         void resize(const std::int32_t w, const std::int32_t h)
         {
             std::cout << "[Screen::resize()] call" << std::endl;
-            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
             // 画面サイズを変更する
-            g_drawer.resize(w, h);
+            m_width = w; m_height = h;
             // フレームバッファサイズを変更する
-            std::int32_t fbWidth, fbHeight;
-            glfwGetFramebufferSize(m_window, &fbWidth, &fbHeight);
-            g_drawer.changeFramebufferSize(fbWidth, fbHeight);
+            glfwGetFramebufferSize(m_window, &m_fbWidth, &m_fbHeight);
         }
 
-    private:
-        //! 画面クリア
-        void clear()
+    public:
+        //! 描画実行
+        void draw()
         {
+            // 画面クリア
             glClearColor(m_bgcolor.clamp_r(), m_bgcolor.clamp_g(), m_bgcolor.clamp_b(), m_bgcolor.clamp_a());
             glClear(GL_COLOR_BUFFER_BIT);
-        }
-
-    private:
-        //! セットアップ
-        void setup()
-        {
-            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
-
             // ビューポートの設定
-            std::int32_t fbWidth, fbHeight;
-            g_drawer.getFramebufferSize(&fbWidth, &fbHeight);
-            glViewport(0, 0, fbWidth, fbHeight);
-        }
-
-    private:
-        //! 矩形描画
-        void draw_rectangle()
-        {
-            my::GlobalDrawer& g_drawer = my::GlobalDrawer::instance();
-
-            std::int32_t fbWidth, fbHeight;
-            g_drawer.getFramebufferSize(&fbWidth, &fbHeight);
-            m_rect_model = my::Matrix::identity();
-            m_rect_model *= my::Matrix::scale(m_scale / fbWidth, m_scale / fbHeight, 1.0F);
-            m_rect.setModelMatrix(m_rect_model);
-            m_rect.draw();
+            glViewport(0, 0, m_fbWidth, m_fbHeight);
+            // カメラの設定（ビュー変換行列）
+            my::Vector eye(3.0f, 4.0f, 5.0f);
+            my::Vector center(0.0F, 0.0F, 0.0F);
+            my::Vector up(0.0F, 1.0F, 0.0F);
+            my::Matrix view = my::Matrix::lookat(eye, center, up);
+            // 投影変換
+            const float w = m_fbWidth / m_scale;
+            const float h = m_fbHeight / m_scale;
+            my::Matrix proj = my::Matrix::orthogonal(-w, w, -h, h, 1.0F, 10.0F);
+            // 矩形描画
+            m_rect.setPosition({0.0F, 0.0F, 0.0F});
+            m_rect.draw(view, proj);
+            // 画面更新
+            glfwSwapBuffers(m_window);
         }
     };
 }
@@ -285,12 +279,6 @@ namespace {
 
 int main()
 {
-    //-------------------
-    // テストコード
-    //std::cout << "[main] test" << std::endl;
-    //(void)my::testcode_Matrix();
-    //-------------------
-
     std::cout << "[main] app start" << std::endl;
     // GLFWでエラーが発生したときにコールされる関数を登録する
     glfwSetErrorCallback(glfw_error_callback);

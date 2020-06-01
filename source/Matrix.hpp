@@ -61,6 +61,53 @@ namespace my {
 
 namespace my {
     /**
+     * @class Vector
+     * @brief ベクトルを扱うクラス
+     * 
+     */
+    class Vector {
+        float   m_x;    //!< X座標
+        float   m_y;    //!< Y座標
+        float   m_z;    //!< Z座標
+
+    public:
+        //! デフォルトコンストラクタ
+        Vector();
+        //! コンストラクタ
+        Vector(const float x, const float y, const float z);
+
+    public:
+        //! +演算子のオーバーロード
+        Vector operator+(const Vector& m) const;
+        //! -演算子のオーバーロード
+        Vector operator-(const Vector& m) const;
+        //! *演算子のオーバーロード
+        Vector operator*(const Vector& m) const;
+        //! +=演算子のオーバーロード
+        Vector& operator+=(const Vector& m);
+        //! -=演算子のオーバーロード
+        Vector& operator-=(const Vector& m);
+        //! *=演算子のオーバーロード
+        Vector& operator*=(const Vector& m);
+
+    public:
+        //! X座標を取得
+        float x() const;
+        //! Y座標を取得
+        float y() const;
+        //! Z座標を取得
+        float z() const;
+
+    public:
+        //! ベクトルの長さを取得
+        float len() const;
+        //! ベクトルの長さの2乗を取得
+        float len2() const;
+    };
+}
+
+namespace my {
+    /**
      * @class Matrix
      * @brief 4x4行列
      * 
@@ -92,12 +139,16 @@ namespace my {
         Matrix& operator*=(const Matrix& m);
 
     public:
+        //! 転置
+        void transpose();
+
+    public:
         //! 単位行列を作成
         static Matrix identity();
         //! (x,y,z)だけ平行移動する変換行列を作成
-        static Matrix translate(const float x, const float y, const float z);
+        static Matrix translate(const Vector& v);
         //! (x,y,z)倍に拡大縮小する変換行列を作成
-        static Matrix scale(const float x, const float y, const float z);
+        static Matrix scale(const Vector& v);
         //! X軸を中心にdegree度回転する変換行列を作成
         static Matrix rotate_x(const Degree degree);
         //! Y軸を中心にdegree度回転する変換行列を作成
@@ -105,7 +156,15 @@ namespace my {
         //! Z軸を中心にdegree度回転する変換行列を作成
         static Matrix rotate_z(const Degree degree);
         //! 任意の(x,y,z)軸を中心にdegree度回転する変換行列を作成
-        static Matrix rotate(const Degree degree, const float x, const float y, const float z);
+        static Matrix rotate(const Degree degree, const Vector& v);
+
+    public:
+        //! ビュー変換行列を作成
+        static Matrix lookat(const Vector eye, const Vector center, const Vector up);
+
+    public:
+        //! 直交投影変換行列を作成
+        static Matrix orthogonal(const float left, const float right, const float bottom, const float top, const float znear, const float zfar);
     };
 }
 

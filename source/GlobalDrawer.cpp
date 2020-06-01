@@ -68,7 +68,7 @@ namespace my {
      * 
      */
     Shader_12ShapeMVP::Shader_12ShapeMVP() :
-        m_progid(0U), m_loc_model(-1), m_loc_pos(-1), m_loc_col(-1)
+        m_progid(0U), m_loc_modelview(-1), m_loc_projection(-1), m_loc_pos(-1), m_loc_col(-1)
     {
     }
 
@@ -76,14 +76,15 @@ namespace my {
      * @brief コンストラクタ
      * 
      * @param [in] progid シェーダプログラムID
-     * @param [in] loc_model モデル変換行列のuniform位置
+     * @param [in] loc_modelview モデルビュー変換行列のuniform位置
+     * @param [in] loc_projection プロジェクション変換行列のuniform位置
      * @param [in] loc_pos 頂点のattribute位置
      * @param [in] loc_col 色のattribute位置
      */
-    Shader_12ShapeMVP::Shader_12ShapeMVP(const GLuint progid, const GLint loc_model, const GLint loc_pos, const GLint loc_col) :
-        m_progid(progid), m_loc_model(loc_model), m_loc_pos(loc_pos), m_loc_col(loc_col)
+    Shader_12ShapeMVP::Shader_12ShapeMVP(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col) :
+        m_progid(progid), m_loc_modelview(loc_modelview), m_loc_projection(loc_projection), m_loc_pos(loc_pos), m_loc_col(loc_col)
     {
-        std::cout << "[Shader_12ShapeMVP::Shader_12ShapeMVP()] progId:" << progid << " loc_model:" << loc_model << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+        std::cout << "[Shader_12ShapeMVP::Shader_12ShapeMVP()] progId:" << progid << " loc_modelview:" << loc_modelview << " loc_projection" << loc_projection << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
     }
 
     /**
@@ -95,12 +96,20 @@ namespace my {
     GLuint Shader_12ShapeMVP::getProgram() const { return this->m_progid; }
 
     /**
-     * @brief モデル変換行列のunifrom位置を取得
+     * @brief モデルビュー変換行列のunifrom位置を取得
      * 
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader_12ShapeMVP::getModelLocation() const { return this->m_loc_model; }
+    GLint Shader_12ShapeMVP::getModelViewLocation() const { return this->m_loc_modelview; }
+
+    /**
+     * @brief プロジェクション変換行列のunifrom位置を取得
+     * 
+     * @retval -1 異常
+     * @retval >=0 正常
+     */
+    GLint Shader_12ShapeMVP::getProjectionLocation() const { return this->m_loc_projection; }
 
     /**
      * @brief 頂点のattribute位置を取得
@@ -191,10 +200,11 @@ namespace my {
         const std::string fsrc = readShaderSource(".\\shader\\12_shape_mvp.frag");
         if ((!vsrc.empty()) && (!fsrc.empty())) {
             GLuint progid = createProgram(vsrc, fsrc);
-            GLint loc_model = glGetUniformLocation(progid, "model");
+            GLint loc_modelview = glGetUniformLocation(progid, "modelview");
+            GLint loc_projection = glGetUniformLocation(progid, "projection");
             GLint loc_pos = glGetAttribLocation(progid, "position");
             GLint loc_col = glGetAttribLocation(progid, "color");
-            this->m_12_shape_mvp = Shader_12ShapeMVP(progid, loc_model, loc_pos, loc_col);
+            this->m_12_shape_mvp = Shader_12ShapeMVP(progid, loc_modelview, loc_projection, loc_pos, loc_col);
         }
     }
 
@@ -331,7 +341,7 @@ namespace my {
      * 
      */
     GlobalDrawer::GlobalDrawer() :
-        m_width(0), m_height(0), m_fbwidth(0), m_fbHeight(0), m_scale(0.0F), m_shaderbuilder()
+        m_shaderbuilder()
     {
         std::cout << "[GlobalDrawer::GlobalDrawer()] call" << std::endl;
     }
@@ -354,54 +364,5 @@ namespace my {
     ShaderBuilder& GlobalDrawer::getShaderBuilder()
     {
         return this->m_shaderbuilder;
-    }
-
-    /**
-     * @brief 画面サイズの変更
-     * 
-     * @param [in] w 画面幅[pixel]
-     * @param [in] h 画面高さ[pixel]
-     */
-    void GlobalDrawer::resize(const std::int32_t w, const std::int32_t h)
-    {
-        std::cout << "[GlobalDrawer::resize()] w:" << w << " h:" << h << std::endl;
-        this->m_width = w;
-        this->m_height = h;
-    }
-
-    /**
-     * @brief フレームバッファサイズの変更
-     * 
-     * @param [in] w フレームバッファ幅[pixel]
-     * @param [in] h フレームバッファ高さ[pixel]
-     */
-    void GlobalDrawer::changeFramebufferSize(const std::int32_t w, const std::int32_t h)
-    {
-        std::cout << "[GlobalDrawer::changeFramebufferSize()] w:" << w << " h:" << h << std::endl;
-        this->m_fbwidth = w;
-        this->m_fbHeight = h;
-    }
-
-    /**
-     * @brief 拡大率の変更
-     * 
-     * @param [in] scale 拡大率
-     */
-    void GlobalDrawer::changeScale(const float scale)
-    {
-        std::cout << "[GlobalDrawer::changeScale()] scale:" << scale << std::endl;
-        this->m_scale = scale;
-    }
-
-    /**
-     * @brief フレームバッファサイズを取得
-     * 
-     * @param [out] w フレームバッファ幅[pixel]
-     * @param [out] h フレームバッファ高さ[pixel]
-     */
-    void GlobalDrawer::getFramebufferSize(std::int32_t* w, std::int32_t* h) const
-    {
-        *w = this->m_fbwidth;
-        *h = this->m_fbHeight;
     }
 }
