@@ -16,18 +16,28 @@ namespace {
     constexpr std::int32_t WIN_W = 640;
     constexpr std::int32_t WIN_H = 480;
 
+    //! 初期拡大率
+    //! 拡大率 = オブジェクトの座標系に対するデバイス座標系の拡大率
+    constexpr float DEFSCALE = 10.0F;
+
     //! 初期クリア色(RGBA)
     constexpr std::uint8_t DEFCOLOR[4] = { 200, 200, 200, 255 };
 
     //! 一秒間に更新する回数
     constexpr double FPS = 30.0;
 
+    //! カメラ
+    const my::Vector CAMERA_EYE = {95.0F, 95.0F, 5.0f};
+    const my::Vector CAMERA_CENTER = {95.0F, 95.0F, 0.0F};
+    const my::Vector CAMERA_UP = {0.0F, 1.0F, 0.0F};
+
     //! 矩形
+    const my::Vector RECT_POS = {100.0F, 100.0F, 0.0F};
     const my::Vertexes RECT_V = {
-        { -0.5F, -0.5F },
-        { 0.5F, -0.5F },
-        { 0.5F, 0.5F },
-        { -0.5F, 0.5F }
+        { -5.0F, -5.0F },
+        { 5.0F, -5.0F },
+        { 5.0F, 5.0F },
+        { -5.0F, 5.0F }
     };
     const my::Indexes RECT_I = {
         0U, 1U, 2U, 3U
@@ -207,7 +217,7 @@ namespace {
     public:
         //! コンストラクタ
         Screen(GLFWwindow* window) :
-            m_window(window), m_width(0), m_height(0), m_fbWidth(0), m_fbHeight(0), m_scale(100.0F),
+            m_window(window), m_width(0), m_height(0), m_fbWidth(0), m_fbHeight(0), m_scale(DEFSCALE),
             m_bgcolor(DEFCOLOR[0], DEFCOLOR[1], DEFCOLOR[2], DEFCOLOR[3]),
             m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C)
         {
@@ -239,16 +249,13 @@ namespace {
             // ビューポートの設定
             glViewport(0, 0, m_fbWidth, m_fbHeight);
             // カメラの設定（ビュー変換行列）
-            my::Vector eye(3.0f, 4.0f, 5.0f);
-            my::Vector center(0.0F, 0.0F, 0.0F);
-            my::Vector up(0.0F, 1.0F, 0.0F);
-            my::Matrix view = my::Matrix::lookat(eye, center, up);
+            my::Matrix view = my::Matrix::lookat(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP);
             // 投影変換
-            const float w = m_fbWidth / m_scale;
-            const float h = m_fbHeight / m_scale;
+            const float w = m_fbWidth / m_scale / 2.0F;
+            const float h = m_fbHeight / m_scale / 2.0F;
             my::Matrix proj = my::Matrix::orthogonal(-w, w, -h, h, 1.0F, 10.0F);
             // 矩形描画
-            m_rect.setPosition({0.0F, 0.0F, 0.0F});
+            m_rect.setPosition(RECT_POS);
             m_rect.draw(view, proj);
             // 画面更新
             glfwSwapBuffers(m_window);
