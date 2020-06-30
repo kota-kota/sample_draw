@@ -17,38 +17,11 @@
 
 namespace my {
     /**
-     * @class Shader_11ShapeSimple
-     * @brief 11_shape_simpleシェーダのプログラムを扱うクラス
+     * @class ShapeShader
+     * @brief shapeシェーダのプログラムを扱うクラス
      * 
      */
-    class Shader_11ShapeSimple {
-        GLuint  m_progid;   //!< シェーダプログラムID
-        GLint   m_loc_pos;  //!< 頂点のattribute位置
-        GLint   m_loc_col;  //!< 色のattribute位置
-
-    public:
-        //! デフォルトコンストラクタ
-        Shader_11ShapeSimple();
-        //! コンストラクタ
-        Shader_11ShapeSimple(const GLuint progid, const GLint loc_pos, const GLint loc_col);
-
-    public:
-        //! シェーダプログラムを取得
-        GLuint getProgram() const;
-        //! 頂点のattribute位置を取得
-        GLint getPositionLocation() const;
-        //! 色のattribute位置を取得
-        GLint getColorLocation() const;
-    };
-}
-
-namespace my {
-    /**
-     * @class Shader_12ShapeMVP
-     * @brief 12_shape_mvpシェーダのプログラムを扱うクラス
-     * 
-     */
-    class Shader_12ShapeMVP {
+    class ShapeShader {
         GLuint  m_progid;           //!< シェーダプログラムID
         GLint   m_loc_modelview;    //!< モデルビュー変換行列のunifrom位置
         GLint   m_loc_projection;   //!< プロジェクション変換行列のunifrom位置
@@ -57,9 +30,9 @@ namespace my {
 
     public:
         //! デフォルトコンストラクタ
-        Shader_12ShapeMVP();
+        ShapeShader();
         //! コンストラクタ
-        Shader_12ShapeMVP(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col);
+        ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col);
 
     public:
         //! シェーダプログラムを取得
@@ -81,8 +54,7 @@ namespace my {
      * @brief シェーダをビルドおよび管理するクラス
      */
     class ShaderBuilder {
-        Shader_11ShapeSimple    m_11_shape_simple;  //!< 11_shape_simpleシェーダのプログラム
-        Shader_12ShapeMVP       m_12_shape_mvp;     //!< 12_shape_mvpシェーダのプログラム
+        ShapeShader       m_shape_shader;     //!< shapeシェーダのプログラム
 
     public:
         //! デフォルトコンストラクタ
@@ -95,16 +67,12 @@ namespace my {
         ShaderBuilder& operator=(const ShaderBuilder& org) = delete;
 
     public:
-        //! 11_shape_simpleシェーダのプログラムの取得
-        Shader_11ShapeSimple getShader_11ShapeSimple() const;
-        //! 12_shape_mvpシェーダのプログラムの取得
-        Shader_12ShapeMVP getShader_12ShapeMVP() const;
+        //! shapeシェーダのプログラムの取得
+        ShapeShader getShapeShader() const;
 
     private:
-        //! 11_shape_simpleシェーダの読み込み
-        void loadShader_11ShapeSimple();
-        //! 12_shape_mvpシェーダの読み込み
-        void loadShader_12ShapeMVP();
+        //! shapeシェーダの読み込み
+        void loadShapeShader();
 
     private:
         //! シェーダソースをファイル読み込み

@@ -19,55 +19,7 @@ namespace my {
      * @brief デフォルトコンストラクタ
      * 
      */
-    Shader_11ShapeSimple::Shader_11ShapeSimple() :
-        m_progid(0U), m_loc_pos(-1), m_loc_col(-1)
-    {
-    }
-
-    /**
-     * @brief コンストラクタ
-     * 
-     * @param [in] progid シェーダプログラムID
-     * @param [in] loc_pos 頂点のattribute位置
-     * @param [in] loc_col 色のattribute位置
-     */
-    Shader_11ShapeSimple::Shader_11ShapeSimple(const GLuint progid, const GLint loc_pos, const GLint loc_col) :
-        m_progid(progid), m_loc_pos(loc_pos), m_loc_col(loc_col)
-    {
-        std::cout << "[Shader_11ShapeSimple::Shader_11ShapeSimple()] progId:" << progid << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
-    }
-
-    /**
-     * @brief シェーダプログラムを取得
-     * 
-     * @retval 0 異常
-     * @retval >0 正常
-     */
-    GLuint Shader_11ShapeSimple::getProgram() const { return this->m_progid; }
-
-    /**
-     * @brief 頂点のattribute位置を取得
-     * 
-     * @retval -1 異常
-     * @retval >=0 正常
-     */
-    GLint Shader_11ShapeSimple::getPositionLocation() const { return this->m_loc_pos; }
-
-    /**
-     * @brief 色のattribute位置を取得
-     * 
-     * @retval -1 異常
-     * @retval >=0 正常
-     */
-    GLint Shader_11ShapeSimple::getColorLocation() const { return this->m_loc_col; }
-}
-
-namespace my {
-    /**
-     * @brief デフォルトコンストラクタ
-     * 
-     */
-    Shader_12ShapeMVP::Shader_12ShapeMVP() :
+    ShapeShader::ShapeShader() :
         m_progid(0U), m_loc_modelview(-1), m_loc_projection(-1), m_loc_pos(-1), m_loc_col(-1)
     {
     }
@@ -81,10 +33,10 @@ namespace my {
      * @param [in] loc_pos 頂点のattribute位置
      * @param [in] loc_col 色のattribute位置
      */
-    Shader_12ShapeMVP::Shader_12ShapeMVP(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col) :
+    ShapeShader::ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col) :
         m_progid(progid), m_loc_modelview(loc_modelview), m_loc_projection(loc_projection), m_loc_pos(loc_pos), m_loc_col(loc_col)
     {
-        std::cout << "[Shader_12ShapeMVP::Shader_12ShapeMVP()] progId:" << progid << " loc_modelview:" << loc_modelview << " loc_projection" << loc_projection << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+        std::cout << "[ShapeShader::ShapeShader()] progId:" << progid << " loc_modelview:" << loc_modelview << " loc_projection:" << loc_projection << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
     }
 
     /**
@@ -93,7 +45,7 @@ namespace my {
      * @retval 0 異常
      * @retval >0 正常
      */
-    GLuint Shader_12ShapeMVP::getProgram() const { return this->m_progid; }
+    GLuint ShapeShader::getProgram() const { return this->m_progid; }
 
     /**
      * @brief モデルビュー変換行列のunifrom位置を取得
@@ -101,7 +53,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader_12ShapeMVP::getModelViewLocation() const { return this->m_loc_modelview; }
+    GLint ShapeShader::getModelViewLocation() const { return this->m_loc_modelview; }
 
     /**
      * @brief プロジェクション変換行列のunifrom位置を取得
@@ -109,7 +61,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader_12ShapeMVP::getProjectionLocation() const { return this->m_loc_projection; }
+    GLint ShapeShader::getProjectionLocation() const { return this->m_loc_projection; }
 
     /**
      * @brief 頂点のattribute位置を取得
@@ -117,7 +69,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader_12ShapeMVP::getPositionLocation() const { return this->m_loc_pos; }
+    GLint ShapeShader::getPositionLocation() const { return this->m_loc_pos; }
 
     /**
      * @brief 色のattribute位置を取得
@@ -125,7 +77,7 @@ namespace my {
      * @retval -1 異常
      * @retval >=0 正常
      */
-    GLint Shader_12ShapeMVP::getColorLocation() const { return this->m_loc_col; }
+    GLint ShapeShader::getColorLocation() const { return this->m_loc_col; }
 }
 
 namespace my {
@@ -136,11 +88,10 @@ namespace my {
      *      シェーダプログラムを作成する。
      */
     ShaderBuilder::ShaderBuilder() :
-        m_11_shape_simple(), m_12_shape_mvp()
+        m_shape_shader()
     {
         std::cout << "[ShaderBuilder::ShaderBuilder()] call" << std::endl;
-        loadShader_11ShapeSimple();
-        loadShader_12ShapeMVP();
+        loadShapeShader();
     }
 
     /**
@@ -152,59 +103,33 @@ namespace my {
     ShaderBuilder::~ShaderBuilder()
     {
         std::cout << "[ShaderBuilder::~ShaderBuilder()] call" << std::endl;
-        glDeleteProgram(this->m_11_shape_simple.getProgram());
-        glDeleteProgram(this->m_12_shape_mvp.getProgram());
+        glDeleteProgram(this->m_shape_shader.getProgram());
     }
 
     /**
-     * @brief 11_shape_simpleシェーダのプログラムの取得
+     * @brief shapeシェーダのプログラムの取得
      * 
      * @par 詳細
-     *      11_shape_simpleシェーダのプログラムを取得する。
+     *      shapeシェーダのプログラムを取得する。
      */
-    Shader_11ShapeSimple ShaderBuilder::getShader_11ShapeSimple() const { return this->m_11_shape_simple; }
+    ShapeShader ShaderBuilder::getShapeShader() const { return this->m_shape_shader; }
 
     /**
-     * @brief 12_shape_mvpシェーダのプログラムの取得
-     * 
-     * @par 詳細
-     *      12_shape_mvpシェーダのプログラムを取得する。
-     */
-    Shader_12ShapeMVP ShaderBuilder::getShader_12ShapeMVP() const { return this->m_12_shape_mvp; }
-
-    /**
-     * @brief 11_shape_simpleシェーダの読み込み
+     * @brief shapeシェーダの読み込み
      * 
      */
-    void ShaderBuilder::loadShader_11ShapeSimple()
+    void ShaderBuilder::loadShapeShader()
     {
-        std::cout << "[ShaderBuilder::loadShader_11ShapeSimple()] call" << std::endl;
-        const std::string vsrc = readShaderSource(".\\shader\\11_shape_simple.vert");
-        const std::string fsrc = readShaderSource(".\\shader\\11_shape_simple.frag");
-        if ((!vsrc.empty()) && (!fsrc.empty())) {
-            GLuint progid = createProgram(vsrc, fsrc);
-            GLint loc_pos = glGetAttribLocation(progid, "position");
-            GLint loc_col = glGetAttribLocation(progid, "color");
-            this->m_11_shape_simple = Shader_11ShapeSimple(progid, loc_pos, loc_col);
-        }
-    }
-
-    /**
-     * @brief 12_shape_mvpシェーダの読み込み
-     * 
-     */
-    void ShaderBuilder::loadShader_12ShapeMVP()
-    {
-        std::cout << "[ShaderBuilder::loadShader_12ShapeMVP()] call" << std::endl;
-        const std::string vsrc = readShaderSource(".\\shader\\12_shape_mvp.vert");
-        const std::string fsrc = readShaderSource(".\\shader\\12_shape_mvp.frag");
+        std::cout << "[ShaderBuilder::loadShapeShader()] call" << std::endl;
+        const std::string vsrc = readShaderSource(".\\shader\\shape.vert");
+        const std::string fsrc = readShaderSource(".\\shader\\shape.frag");
         if ((!vsrc.empty()) && (!fsrc.empty())) {
             GLuint progid = createProgram(vsrc, fsrc);
             GLint loc_modelview = glGetUniformLocation(progid, "modelview");
             GLint loc_projection = glGetUniformLocation(progid, "projection");
             GLint loc_pos = glGetAttribLocation(progid, "position");
             GLint loc_col = glGetAttribLocation(progid, "color");
-            this->m_12_shape_mvp = Shader_12ShapeMVP(progid, loc_modelview, loc_projection, loc_pos, loc_col);
+            this->m_shape_shader = ShapeShader(progid, loc_modelview, loc_projection, loc_pos, loc_col);
         }
     }
 

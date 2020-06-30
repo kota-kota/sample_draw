@@ -12,7 +12,7 @@
 
 namespace {
     //! ウインドウタイトル・幅・高さ
-    constexpr char* WIN_TITLE = "12_shape_mvp";
+    constexpr char* WIN_TITLE = "sample_draw";
     constexpr std::int32_t WIN_W = 640;
     constexpr std::int32_t WIN_H = 480;
 
@@ -126,7 +126,7 @@ namespace {
         void draw(const my::Matrix& view, const my::Matrix& proj)
         {
             // シェーダ取得
-            my::Shader_12ShapeMVP shader = my::GlobalDrawer::instance().getShaderBuilder().getShader_12ShapeMVP();
+            my::ShapeShader shader = my::GlobalDrawer::instance().getShaderBuilder().getShapeShader();
             const GLuint prog = shader.getProgram();
             const GLint modelview_loc = shader.getModelViewLocation();
             const GLint projection_loc = shader.getProjectionLocation();
@@ -271,7 +271,7 @@ namespace {
     }
 
     //! GLFWでウィンドウのサイズが変更されたときに呼ばれるコールバック関数
-    void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
+    static void glfw_window_resize_callback(GLFWwindow* window, int width, int height)
     {
         std::cout << "[GLFW RESIZE] w:" << width << " h:" << height << " (" << window << ")" << std::endl;
         // 画面インスタンスのポインタを取得する
@@ -281,6 +281,50 @@ namespace {
             screen->resize(width, height);
             screen->draw();
         }
+    }
+
+    //! GLFWでマウスの釦が押されたときに呼ばれるコールバック関数
+    static void glfw_window_mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+    {
+        std::cout << "[GLFW MOUSE_BTN] button:" << button << " action:" << action << " mods:" << mods << " (" << window << ")" << std::endl;
+        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+            if (action == GLFW_PRESS) {
+            }
+            else {
+            }
+        }
+        else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            if (action == GLFW_PRESS) {
+            }
+            else {
+            }
+        }
+        else if (button == GLFW_MOUSE_BUTTON_MIDDLE) {
+            if (action == GLFW_PRESS) {
+            }
+            else {
+            }
+        }
+        else {
+        }
+    }
+
+    //! GLFWでマウスカーソルの位置が変化したときに呼ばれるコールバック関数
+    static void glfw_window_mouse_position_callback(GLFWwindow *window, double x, double y)
+    {
+        //std::cout << "[GLFW MOUSE_POS] x:" << x << " y:" << y << " (" << window << ")" << std::endl;
+    }
+
+    //! GLFWでマウスホイールを動かしたときに呼ばれるコールバック関数
+    static void glfw_window_mouse_scroll_callback(GLFWwindow *window, double x, double y)
+    {
+        std::cout << "[GLFW MOUSE_SCRL] x:" << x << " y:" << y << " (" << window << ")" << std::endl;
+    }
+
+    //! GLFWでキーが入力されたときに呼ばれるコールバック関数
+    static void glfw_window_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+        std::cout << "[GLFW KEY] key:" << key << " scancode:" << scancode << " action:" << action << " mods:0x" << mods << " (" << window << ")" << std::endl;
     }
 }
 
@@ -315,6 +359,14 @@ int main()
 
     // GLFWでウィンドウのサイズが変更されたときに呼ばれる関数を登録する
     glfwSetWindowSizeCallback(window, glfw_window_resize_callback);
+    // GLFWでマウスの釦が押されたときに呼ばれる関数を登録する
+    glfwSetMouseButtonCallback(window, glfw_window_mouse_button_callback);
+    // GLFWでマウスカーソルの位置が変化したときに呼ばれる関数を登録する
+    glfwSetCursorPosCallback(window, glfw_window_mouse_position_callback);
+    // GLFWでマウスホイールを動かしたときに呼ばれる関数を登録する
+    glfwSetScrollCallback(window, glfw_window_mouse_scroll_callback);
+    // GLFWでキーが入力されたときに呼ばれる関数を登録する
+    glfwSetKeyCallback(window, glfw_window_key_callback);
 
     // 作成したウィンドウをOpenGLの処理対象にする
     glfwMakeContextCurrent(window);

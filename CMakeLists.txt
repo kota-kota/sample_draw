@@ -60,12 +60,54 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release")
 
-#サブディレクトリ
-add_subdirectory(00_window_create)
-add_subdirectory(01_window_event)
-add_subdirectory(10_clear)
-add_subdirectory(11_shape_simple)
-add_subdirectory(12_shape_mvp)
+#ソース
+set(SRCS
+	${CMAKE_SOURCE_DIR}/source/sample_draw.cpp
+	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.hpp
+	${CMAKE_SOURCE_DIR}/source/GlobalDrawer.cpp
+	${CMAKE_SOURCE_DIR}/source/Matrix.hpp
+	${CMAKE_SOURCE_DIR}/source/Matrix.cpp
+	${CMAKE_SOURCE_DIR}/source/Vertex.hpp
+	${CMAKE_SOURCE_DIR}/source/Vertex.cpp
+)
+#インクルードパス
+set(INC_PATH
+	${CMAKE_SOURCE_DIR}/source
+	${CMAKE_SOURCE_DIR}/library/include/GLFW
+	${CMAKE_SOURCE_DIR}/library/include/GLEW
+)
+#ライブラリパス
+set(LIB_PATH
+	${CMAKE_SOURCE_DIR}/library/lib
+)
+#ライブラリ
+set(LIBS
+	opengl32.lib
+	glfw3.lib
+	libglew32.lib
+)
+#プリプロセッサ
+add_definitions(
+	-DGLEW_STATIC
+)
+
+#インクルードパス設定
+include_directories(${INC_PATH})
+#ライブラリパス設定
+link_directories(${LIB_PATH})
+#実行ファイル
+add_executable(${PROJECT_NAME} ${SRCS})
+#リンク
+target_link_libraries(${PROJECT_NAME} ${LIBS})
+
+#ビルド後イベント
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/source/shader/ $<TARGET_FILE_DIR:${PROJECT_NAME}>/shader
+  COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/source/shader/ ${CMAKE_CURRENT_BINARY_DIR}/shader
+  COMMENT "Copy shader sources"
+)
 
 #CMakeで設定されている全ての変数を出力する
 #DumpCMakeVariables()
