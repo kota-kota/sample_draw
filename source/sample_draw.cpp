@@ -13,12 +13,12 @@
 namespace {
     //! ウインドウタイトル・幅・高さ
     constexpr char* WIN_TITLE = "sample_draw";
-    constexpr std::int32_t WIN_W = 640;
-    constexpr std::int32_t WIN_H = 480;
+    constexpr std::int32_t WIN_W = 1280;
+    constexpr std::int32_t WIN_H = 720;
 
     //! 初期拡大率
     //! 拡大率 = オブジェクトの座標系に対するデバイス座標系の拡大率
-    constexpr float DEFSCALE = 10.0F;
+    constexpr float DEFSCALE = 1.0F;
 
     //! 初期クリア色(RGBA)
     constexpr std::uint8_t DEFCOLOR[4] = { 200, 200, 200, 255 };
@@ -26,27 +26,74 @@ namespace {
     //! 一秒間に更新する回数
     constexpr double FPS = 30.0;
 
-    //! カメラ
-    const my::Vector CAMERA_EYE = {95.0F, 95.0F, 5.0f};
-    const my::Vector CAMERA_CENTER = {95.0F, 95.0F, 0.0F};
-    const my::Vector CAMERA_UP = {0.0F, 1.0F, 0.0F};
+    //! 線描画
+    const my::Vector LINES_POS = {80.0F, 80.0F, 0.0F};
+    const my::Vector LINE_STRIP_POS = {220.0F, 80.0F, 0.0F};
+    const my::Vector LINE_LOOP_POS = {360.0F, 80.0F, 0.0F};
+    const my::Vertexes LINE_V = {
+        { -40.0F, -40.0F },
+        { -20.0F, 20.0F },
+        { 0.0F, -40.0F },
+        { 20.0F, 20.0F },
+        { 40.0F, -40.0F },
+        { 60.0F, 20.0F }
+    };
+    const my::Indexes LINE_I = {
+        0U, 1U, 2U, 3U, 4U, 5U
+    };
+    const my::Colors LINE_C = {
+        { 255, 0, 0, 255 },
+        { 0, 255, 0, 255 },
+        { 0, 0, 255, 255 },
+        { 255, 255, 0, 255 },
+        { 0, 255, 255, 255 },
+        { 255, 0, 255, 255 },
+    };
 
-    //! 矩形
-    const my::Vector RECT_POS = {100.0F, 100.0F, 0.0F};
-    const my::Vertexes RECT_V = {
-        { -5.0F, -5.0F },
-        { 5.0F, -5.0F },
-        { 5.0F, 5.0F },
-        { -5.0F, 5.0F }
+    //! 面描画
+    const my::Vector TRIANGLES_POS = {500.0F, 80.0F, 0.0F};
+    const my::Vector TRIANGLE_STRIP_POS = {640.0F, 80.0F, 0.0F};
+    const my::Vector TRIANGLE_FAN_POS = {780.0F, 80.0F, 0.0F};
+    const my::Vertexes TRIANGLE_V = {
+        { -40.0F, -40.0F },
+        { -20.0F, 20.0F },
+        { 0.0F, -40.0F },
+        { 20.0F, 20.0F },
+        { 40.0F, -40.0F },
+        { 60.0F, 20.0F }
     };
-    const my::Indexes RECT_I = {
-        0U, 1U, 2U, 3U
+    const my::Indexes TRIANGLE_I = {
+        0U, 1U, 2U, 3U, 4U, 5U
     };
-    const my::Colors RECT_C = {
+    const my::Colors TRIANGLE_C = {
         { 255, 0, 0, 255 },
+        { 0, 255, 0, 255 },
+        { 0, 0, 255, 255 },
+        { 255, 255, 0, 255 },
+        { 0, 255, 255, 255 },
+        { 255, 0, 255, 255 },
+    };
+
+    //! 点描画
+    const my::Vector POINTS_POS = {920.0F, 80.0F, 0.0F};
+    const my::Vertexes POINT_V = {
+        { -40.0F, -40.0F },
+        { -20.0F, 20.0F },
+        { 0.0F, -40.0F },
+        { 20.0F, 20.0F },
+        { 40.0F, -40.0F },
+        { 60.0F, 20.0F }
+    };
+    const my::Indexes POINT_I = {
+        0U, 1U, 2U, 3U, 4U, 5U
+    };
+    const my::Colors POINT_C = {
         { 255, 0, 0, 255 },
-        { 255, 0, 0, 255 },
-        { 255, 0, 0, 255 },
+        { 0, 255, 0, 255 },
+        { 0, 0, 255, 255 },
+        { 255, 255, 0, 255 },
+        { 0, 255, 255, 255 },
+        { 255, 0, 255, 255 },
     };
 }
 
@@ -130,6 +177,7 @@ namespace {
             const GLuint prog = shader.getProgram();
             const GLint modelview_loc = shader.getModelViewLocation();
             const GLint projection_loc = shader.getProjectionLocation();
+            const GLint pointsize_loc = shader.getPointSizeLocation();
             const GLint pos_loc = shader.getPositionLocation();
             const GLint col_loc = shader.getColorLocation();
 
@@ -146,6 +194,9 @@ namespace {
             my::Matrix projection = proj;
             projection.transpose();
             glUniformMatrix4fv(projection_loc, 1, GL_FALSE, projection.data());
+
+            // ポイントサイズ（固定）
+            glUniform1f(pointsize_loc, 5.0F);
 
             // 頂点配列オブジェクトの結合
             glBindVertexArray(this->m_vao);
@@ -212,14 +263,26 @@ namespace {
         std::int32_t    m_fbHeight;         //!< フレームバッファ高さ[pixel]
         float           m_scale;            //!< 拡大率
         my::Color       m_bgcolor;          //!< 背景色
-        Shape           m_rect;             //!< 矩形
+        Shape           m_lines;            //!< 線：ライン
+        Shape           m_line_strip;       //!< 線：ラインストリップ
+        Shape           m_line_loop;        //!< 線：ラインループ
+        Shape           m_triangles;        //!< 面：ポリゴン
+        Shape           m_triangle_strip;   //!< 面：ストリップ
+        Shape           m_triangle_fan;     //!< 面：ファン
+        Shape           m_points;           //!< 点
 
     public:
         //! コンストラクタ
         Screen(GLFWwindow* window) :
             m_window(window), m_width(0), m_height(0), m_fbWidth(0), m_fbHeight(0), m_scale(DEFSCALE),
             m_bgcolor(DEFCOLOR[0], DEFCOLOR[1], DEFCOLOR[2], DEFCOLOR[3]),
-            m_rect(GL_LINE_LOOP, RECT_V, RECT_I, RECT_C)
+            m_lines(GL_LINES, LINE_V, LINE_I, LINE_C),
+            m_line_strip(GL_LINE_STRIP, LINE_V, LINE_I, LINE_C),
+            m_line_loop(GL_LINE_LOOP, LINE_V, LINE_I, LINE_C),
+            m_triangles(GL_TRIANGLES, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
+            m_triangle_strip(GL_TRIANGLE_STRIP, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
+            m_triangle_fan(GL_TRIANGLE_FAN, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
+            m_points(GL_POINTS, POINT_V, POINT_I, POINT_C)
         {
             std::cout << "[Screen::Screen()] call" << std::endl;
             // 画面サイズを取得する
@@ -243,20 +306,45 @@ namespace {
         //! 描画実行
         void draw()
         {
+            const float w_f = static_cast<float>(m_fbWidth);
+            const float h_f = static_cast<float>(m_fbHeight);
+
             // 画面クリア
             glClearColor(m_bgcolor.clamp_r(), m_bgcolor.clamp_g(), m_bgcolor.clamp_b(), m_bgcolor.clamp_a());
             glClear(GL_COLOR_BUFFER_BIT);
             // ビューポートの設定
             glViewport(0, 0, m_fbWidth, m_fbHeight);
             // カメラの設定（ビュー変換行列）
+            const my::Vector CAMERA_EYE = {w_f / 2.0F, h_f / 2.0F, 5.0f};
+            const my::Vector CAMERA_CENTER = {w_f / 2.0F, h_f / 2.0F, 0.0F};
+            const my::Vector CAMERA_UP = {0.0F, 1.0F, 0.0F};
             my::Matrix view = my::Matrix::lookat(CAMERA_EYE, CAMERA_CENTER, CAMERA_UP);
             // 投影変換
             const float w = m_fbWidth / m_scale / 2.0F;
             const float h = m_fbHeight / m_scale / 2.0F;
             my::Matrix proj = my::Matrix::orthogonal(-w, w, -h, h, 1.0F, 10.0F);
-            // 矩形描画
-            m_rect.setPosition(RECT_POS);
-            m_rect.draw(view, proj);
+            // 線：ライン描画
+            m_lines.setPosition(LINES_POS);
+            m_lines.draw(view, proj);
+            // 線：ラインストリップ描画
+            m_line_strip.setPosition(LINE_STRIP_POS);
+            m_line_strip.draw(view, proj);
+            // 線：ラインループ描画
+            m_line_loop.setPosition(LINE_LOOP_POS);
+            m_line_loop.draw(view, proj);
+            // 面：ポリゴン描画
+            m_triangles.setPosition(TRIANGLES_POS);
+            m_triangles.draw(view, proj);
+            // 面：ポリゴン描画
+            m_triangle_strip.setPosition(TRIANGLE_STRIP_POS);
+            m_triangle_strip.draw(view, proj);
+            // 面：ポリゴン描画
+            m_triangle_fan.setPosition(TRIANGLE_FAN_POS);
+            m_triangle_fan.draw(view, proj);
+            // 点
+            glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+            m_points.setPosition(POINTS_POS);
+            m_points.draw(view, proj);
             // 画面更新
             glfwSwapBuffers(m_window);
         }

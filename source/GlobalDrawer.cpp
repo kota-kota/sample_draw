@@ -30,13 +30,14 @@ namespace my {
      * @param [in] progid シェーダプログラムID
      * @param [in] loc_modelview モデルビュー変換行列のuniform位置
      * @param [in] loc_projection プロジェクション変換行列のuniform位置
+     * @param [in] loc_pointsize ポイントサイズのuniform位置
      * @param [in] loc_pos 頂点のattribute位置
      * @param [in] loc_col 色のattribute位置
      */
-    ShapeShader::ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col) :
-        m_progid(progid), m_loc_modelview(loc_modelview), m_loc_projection(loc_projection), m_loc_pos(loc_pos), m_loc_col(loc_col)
+    ShapeShader::ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pointsize, const GLint loc_pos, const GLint loc_col) :
+        m_progid(progid), m_loc_modelview(loc_modelview), m_loc_projection(loc_projection), m_loc_pointsize(loc_pointsize), m_loc_pos(loc_pos), m_loc_col(loc_col)
     {
-        std::cout << "[ShapeShader::ShapeShader()] progId:" << progid << " loc_modelview:" << loc_modelview << " loc_projection:" << loc_projection << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
+        std::cout << "[ShapeShader::ShapeShader()] progId:" << progid << " loc_modelview:" << loc_modelview << " loc_projection:" << loc_projection << " loc_pointsize:" << loc_pointsize << " loc_pos:" << loc_pos << " loc_col:" << loc_col << std::endl;
     }
 
     /**
@@ -62,6 +63,14 @@ namespace my {
      * @retval >=0 正常
      */
     GLint ShapeShader::getProjectionLocation() const { return this->m_loc_projection; }
+
+    /**
+     * @brief ポイントサイズのunifrom位置を取得
+     * 
+     * @retval -1 異常
+     * @retval >=0 正常
+     */
+    GLint ShapeShader::getPointSizeLocation() const { return this->m_loc_pointsize; }
 
     /**
      * @brief 頂点のattribute位置を取得
@@ -127,9 +136,10 @@ namespace my {
             GLuint progid = createProgram(vsrc, fsrc);
             GLint loc_modelview = glGetUniformLocation(progid, "modelview");
             GLint loc_projection = glGetUniformLocation(progid, "projection");
+            GLint loc_pointsize = glGetUniformLocation(progid, "pointSize");
             GLint loc_pos = glGetAttribLocation(progid, "position");
             GLint loc_col = glGetAttribLocation(progid, "color");
-            this->m_shape_shader = ShapeShader(progid, loc_modelview, loc_projection, loc_pos, loc_col);
+            this->m_shape_shader = ShapeShader(progid, loc_modelview, loc_projection, loc_pointsize, loc_pos, loc_col);
         }
     }
 

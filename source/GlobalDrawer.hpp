@@ -25,6 +25,7 @@ namespace my {
         GLuint  m_progid;           //!< シェーダプログラムID
         GLint   m_loc_modelview;    //!< モデルビュー変換行列のunifrom位置
         GLint   m_loc_projection;   //!< プロジェクション変換行列のunifrom位置
+        GLint   m_loc_pointsize;    //!< ポイントサイズのunifrom位置
         GLint   m_loc_pos;          //!< 頂点のattribute位置
         GLint   m_loc_col;          //!< 色のattribute位置
 
@@ -32,7 +33,7 @@ namespace my {
         //! デフォルトコンストラクタ
         ShapeShader();
         //! コンストラクタ
-        ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint loc_pos, const GLint loc_col);
+        ShapeShader(const GLuint progid, const GLint loc_modelview, const GLint loc_projection, const GLint m_loc_pointsize, const GLint loc_pos, const GLint loc_col);
 
     public:
         //! シェーダプログラムを取得
@@ -41,6 +42,8 @@ namespace my {
         GLint getModelViewLocation() const;
         //! プロジェクション変換行列のunifrom位置を取得
         GLint getProjectionLocation() const;
+        //! ポイントサイズのunifrom位置を取得
+        GLint getPointSizeLocation() const;
         //! 頂点のattribute位置を取得
         GLint getPositionLocation() const;
         //! 色のattribute位置を取得
