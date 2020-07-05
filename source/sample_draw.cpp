@@ -95,6 +95,22 @@ namespace {
         { 0, 255, 255, 255 },
         { 255, 0, 255, 255 },
     };
+
+    //! テキスト描画
+    const std::wstring TEXT_ASCII = L"abcdefghijklmnopqrstuvwxyz";
+    const my::Vector TEXT_ASCII_POS = { 350.0F, 160.0F, 0.0F };
+    const my::Color TEXT_ASCII_C = { 255, 0, 0, 255 };
+    const std::int32_t TEXT_ASCII_SZ = 32;
+
+    const std::wstring TEXT_KANA = L"さんぷる　サンプル　ｻﾝﾌﾟﾙ";
+    const my::Vector TEXT_KANA_POS = { 180.0F, 200.0F, 0.0F };
+    const my::Color TEXT_KANA_C = { 255, 255, 0, 255 };
+    const std::int32_t TEXT_KANA_SZ = 16;
+
+    const std::wstring TEXT_BOLD = L"太字Bold";
+    const my::Vector TEXT_BOLD_POS = { 100.0F, 230.0F, 0.0F };
+    const my::Color TEXT_BOLD_C = { 0, 0, 255, 255 };
+    const std::int32_t TEXT_BOLD_SZ = 16;
 }
 
 namespace {
@@ -112,7 +128,7 @@ namespace {
 
     public:
         //! コンストラクタ
-        Shape::Shape(const GLenum mode, const my::Vertexes& vertexes, const my::Indexes& indexes, const my::Colors& colors) :
+        Shape(const GLenum mode, const my::Vertexes& vertexes, const my::Indexes& indexes, const my::Colors& colors) :
             m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U),
             m_mode(mode), m_vertexes(vertexes), m_indexes(indexes), m_colors(colors),
             m_pos({0.0F, 0.0F, 0.0F}), m_scale({1.0F, 1.0F, 1.0F})
@@ -212,6 +228,170 @@ namespace {
             // 描画実行
             GLsizei icnt = static_cast<GLsizei>(this->m_indexes.size());
             glDrawElements(this->m_mode, icnt, GL_UNSIGNED_INT, nullptr);
+
+            // 頂点配列オブジェクトの結合を解除
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
+        }
+    };
+}
+
+namespace {
+    //! テキスト
+    class Text {
+    public:
+        //! 太字
+        enum class BOLD { NO, YES };
+
+    private:
+        my::Image       m_image;        //!< テキスト画像
+        std::wstring    m_text;         //!< テキスト文字列
+        std::int32_t    m_size;         //!< テキストサイズ
+        my::Color       m_color;        //!< テキスト色
+        BOLD            m_bold;         //!< 太字
+        my::Vector      m_pos;          //!< 描画位置
+        my::Vector      m_scale;        //!< 描画スケール
+
+    public:
+        //! コンストラクタ
+        Text(const std::wstring& text, const my::Color& color) :
+            m_image(), m_text(text), m_color(color), m_size(8), m_bold(BOLD::NO),
+            m_pos({0.0F, 0.0F, 0.0F}), m_scale({1.0F, 1.0F, 1.0F})
+        {
+            std::cout << "[Text::Text()] call" << std::endl;
+            std::cout << "* input text <" << text.c_str() << ">" << std::endl;
+        }
+
+        //! デストラクタ
+        ~Text()
+        {
+            std::cout << "[Image::~Image()] call" << std::endl;
+        }
+
+        //! コピーコンストラクタによるコピー禁止
+        Text(const Text& org) = delete;
+        //! 代入によるコピー禁止
+        Text& operator=(const Text& org) = delete;
+
+    public:
+        //! 描画位置の設定
+        void setPosition(const my::Vector& pos) { this->m_pos = pos; }
+
+        //! 描画スケールの設定
+        void setScale(const my::Vector& scale) { this->m_scale = scale; }
+
+        //! 文字サイズの設定
+        void setSize(const std::int32_t size) { this->m_size = size; }
+
+        //! 太字の設定
+        void setBold(const BOLD bold) { this->m_bold = bold; }
+
+        //! 描画
+        void draw(const my::Matrix& view, const my::Matrix& proj)
+        {
+            // テキスト画像の生成
+            if(m_image.empty()) {
+                bool isBold = (m_bold == BOLD::YES) ? true : false;
+                m_image = my::GlobalDrawer::instance().getTextBuilder().build(m_text, m_size, isBold);
+            }
+
+            // シェーダ取得
+            my::TextShader shader = my::GlobalDrawer::instance().getShaderBuilder().getTextShader();
+            const GLuint prog = shader.getProgram();
+            const GLint modelview_loc = shader.getModelViewLocation();
+            const GLint projection_loc = shader.getProjectionLocation();
+            const GLint texture_loc = shader.getTextureLocation();
+            const GLint texcolor_loc = shader.getTexColorLocation();
+            const GLint pos_loc = shader.getPositionLocation();
+            const GLint uv_loc = shader.getUVLocation();
+
+            // シェーダプログラムを指定
+            glUseProgram(prog);
+
+            // モデルの配置（モデルビュー変換行列）
+            my::Matrix model = my::Matrix::translate(m_pos) * my::Matrix::scale(m_scale);
+            my::Matrix modelview = view * model;
+            modelview.transpose();
+            glUniformMatrix4fv(modelview_loc, 1, GL_FALSE, modelview.data());
+
+            // 投影変換（プロジェクション変換行列）
+            my::Matrix projection = proj;
+            projection.transpose();
+            glUniformMatrix4fv(projection_loc, 1, GL_FALSE, projection.data());
+
+            // GL描画設定
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glEnable(GL_BLEND);
+            glEnable(GL_TEXTURE_2D);
+
+            // テクスチャ生成
+            GLuint texId;
+            glGenTextures(1, &texId);
+
+            // テクスチャバインド
+            glBindTexture(GL_TEXTURE_2D, texId);
+
+            // テクスチャロード
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, m_image.width(), m_image.height(), 0, GL_ALPHA, GL_UNSIGNED_BYTE, &m_image[0]);
+
+            //テクスチャパラメータ設定
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+            //テクスチャユニット0を指定
+            glUniform1i(texture_loc, 0);
+
+            const float xmin = -(static_cast<float>(m_image.width()) / 2.0F);
+            const float ymin = -(static_cast<float>(m_image.height()) / 2.0F);
+            const float xmax = (static_cast<float>(m_image.width()) / 2.0F);
+            const float ymax = (static_cast<float>(m_image.height()) / 2.0F);
+
+            //頂点座標
+            const GLint pointNum = 4;
+            GLfloat p[pointNum * 3] = {
+                xmin, ymax, 0.0F,
+                xmax, ymax, 0.0F,
+                xmin, ymin, 0.0F,
+                xmax, ymin, 0.0F,
+            };
+
+            //UV座標
+            GLfloat uv[pointNum * 2] = {
+                0.0F, 0.0F,
+                1.0F, 0.0F,
+                0.0F, 1.0F,
+                1.0F, 1.0F,
+            };
+
+            //テクスチャ色
+            GLfloat color[4];
+            color[0] = m_color.r() / 255.0F;
+            color[1] = m_color.g() / 255.0F;
+            color[2] = m_color.b() / 255.0F;
+            color[3] = m_color.a() / 255.0F;
+            glUniform4fv(texcolor_loc, 1, &color[0]);
+
+            //頂点データ転送
+            glEnableVertexAttribArray(pos_loc);
+            glEnableVertexAttribArray(uv_loc);
+            glVertexAttribPointer(pos_loc, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat*)&p[0]);
+            glVertexAttribPointer(uv_loc, 2, GL_FLOAT, GL_FALSE, 0, (GLfloat*)&uv[0]);
+
+            //描画
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, pointNum);
+
+            //テクスチャアンバインド
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            //テクスチャ破棄
+            glDeleteTextures(1, &texId);
+
+            glDisable(GL_TEXTURE_2D);
+            glDisable(GL_BLEND);
         }
     };
 }
@@ -270,6 +450,9 @@ namespace {
         Shape           m_triangle_strip;   //!< 面：ストリップ
         Shape           m_triangle_fan;     //!< 面：ファン
         Shape           m_points;           //!< 点
+        Text            m_text_ascii;       //!< テキスト
+        Text            m_text_kana;        //!< テキスト
+        Text            m_text_bold;        //!< テキスト
 
     public:
         //! コンストラクタ
@@ -282,7 +465,10 @@ namespace {
             m_triangles(GL_TRIANGLES, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
             m_triangle_strip(GL_TRIANGLE_STRIP, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
             m_triangle_fan(GL_TRIANGLE_FAN, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
-            m_points(GL_POINTS, POINT_V, POINT_I, POINT_C)
+            m_points(GL_POINTS, POINT_V, POINT_I, POINT_C),
+            m_text_ascii(TEXT_ASCII, TEXT_ASCII_C),
+            m_text_kana(TEXT_KANA, TEXT_KANA_C),
+            m_text_bold(TEXT_BOLD, TEXT_BOLD_C)
         {
             std::cout << "[Screen::Screen()] call" << std::endl;
             // 画面サイズを取得する
@@ -324,6 +510,7 @@ namespace {
             const float h = m_fbHeight / m_scale / 2.0F;
             my::Matrix proj = my::Matrix::orthogonal(-w, w, -h, h, 1.0F, 10.0F);
             // 線：ライン描画
+            glLineWidth(5.0F);
             m_lines.setPosition(LINES_POS);
             m_lines.draw(view, proj);
             // 線：ラインストリップ描画
@@ -345,6 +532,19 @@ namespace {
             glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
             m_points.setPosition(POINTS_POS);
             m_points.draw(view, proj);
+            // テキスト
+            m_text_ascii.setPosition(TEXT_ASCII_POS);
+            m_text_ascii.setSize(TEXT_ASCII_SZ);
+            m_text_ascii.draw(view, proj);
+            // テキスト
+            m_text_kana.setPosition(TEXT_KANA_POS);
+            m_text_kana.setSize(TEXT_KANA_SZ);
+            m_text_kana.draw(view, proj);
+            // テキスト
+            m_text_bold.setPosition(TEXT_BOLD_POS);
+            m_text_bold.setSize(TEXT_BOLD_SZ);
+            m_text_bold.setBold(Text::BOLD::YES);
+            m_text_bold.draw(view, proj);
             // 画面更新
             glfwSwapBuffers(m_window);
         }

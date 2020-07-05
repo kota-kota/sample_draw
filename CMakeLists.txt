@@ -75,6 +75,7 @@ set(INC_PATH
 	${CMAKE_SOURCE_DIR}/source
 	${CMAKE_SOURCE_DIR}/library/include/GLFW
 	${CMAKE_SOURCE_DIR}/library/include/GLEW
+	${CMAKE_SOURCE_DIR}/library/include/freetype
 )
 #ライブラリパス
 set(LIB_PATH
@@ -85,6 +86,7 @@ set(LIBS
 	opengl32.lib
 	glfw3.lib
 	libglew32.lib
+	freetype.lib
 )
 #プリプロセッサ
 add_definitions(
