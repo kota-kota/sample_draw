@@ -245,28 +245,54 @@ namespace {
         enum class BOLD { NO, YES };
 
     private:
+        GLuint          m_vao;          //!< 頂点配列オブジェクト
+        GLuint          m_vertex_vbo;   //!< 頂点用のバッファオブジェクト
+        GLuint          m_index_vbo;    //!< 頂点インデックス用のバッファオブジェクト
+        GLuint          m_texid;        //!< テキスト画像のテクスチャID
         my::Image       m_image;        //!< テキスト画像
         std::wstring    m_text;         //!< テキスト文字列
-        std::int32_t    m_size;         //!< テキストサイズ
+        my::Vertexes    m_vertexes;     //!< 頂点座標の並び
+        my::Indexes     m_indexes;      //!< 頂点インデックスの並び
         my::Color       m_color;        //!< テキスト色
-        BOLD            m_bold;         //!< 太字
         my::Vector      m_pos;          //!< 描画位置
         my::Vector      m_scale;        //!< 描画スケール
+        std::int32_t    m_size;         //!< テキストサイズ
+        BOLD            m_bold;         //!< 太字
 
     public:
         //! コンストラクタ
-        Text(const std::wstring& text, const my::Color& color) :
-            m_image(), m_text(text), m_color(color), m_size(8), m_bold(BOLD::NO),
-            m_pos({0.0F, 0.0F, 0.0F}), m_scale({1.0F, 1.0F, 1.0F})
+        Text(const std::wstring& text) :
+            m_vao(0U), m_vertex_vbo(0U), m_index_vbo(0U), m_texid(0), m_image(),
+            m_text(text), m_vertexes(), m_indexes({0U, 1U, 2U, 3U}), m_color({0, 0, 0, 255}),
+            m_pos({0.0F, 0.0F, 0.0F}), m_scale({1.0F, 1.0F, 1.0F}), m_size(8), m_bold(BOLD::NO)
         {
             std::cout << "[Text::Text()] call" << std::endl;
             std::cout << "* input text <" << text.c_str() << ">" << std::endl;
+            // 頂点配列オブジェクトを作成する
+            glGenVertexArrays(1, &this->m_vao);
+            std::cout << "* VAO id:" << m_vao << std::endl;
+            // 頂点用のバッファオブジェクトを作成する
+            glGenBuffers(1, &this->m_vertex_vbo);
+            std::cout << "* VBO(Vertex) id:" << m_vertex_vbo << std::endl;
+            // 頂点インデックス用のバッファオブジェクトを作成する
+            glGenBuffers(1, &this->m_index_vbo);
+            std::cout << "* VBO(Index) id:" << m_index_vbo << std::endl;
         }
 
         //! デストラクタ
         ~Text()
         {
             std::cout << "[Image::~Image()] call" << std::endl;
+            // 頂点配列オブジェクトを破棄する
+            glDeleteVertexArrays(1, &this->m_vao);
+            // 頂点用のバッファオブジェクトを破棄する
+            glDeleteBuffers(1, &this->m_vertex_vbo);
+            // 頂点インデックス用のバッファオブジェクトを破棄する
+            glDeleteBuffers(1, &this->m_index_vbo);
+            //テクスチャ破棄
+            if(m_texid != 0) {
+                glDeleteTextures(1, &m_texid);
+            }
         }
 
         //! コピーコンストラクタによるコピー禁止
@@ -281,6 +307,9 @@ namespace {
         //! 描画スケールの設定
         void setScale(const my::Vector& scale) { this->m_scale = scale; }
 
+        //! テキスト色の設定
+        void setColor(const my::Color& color) { this->m_color = color; }
+
         //! 文字サイズの設定
         void setSize(const std::int32_t size) { this->m_size = size; }
 
@@ -290,10 +319,55 @@ namespace {
         //! 描画
         void draw(const my::Matrix& view, const my::Matrix& proj)
         {
+            // UV座標
+            const GLint pointNum = 4;
+            GLfloat uv[pointNum * 2] = {
+                0.0F, 0.0F,
+                1.0F, 0.0F,
+                0.0F, 1.0F,
+                1.0F, 1.0F,
+            };
+
             // テキスト画像の生成
-            if(m_image.empty()) {
+            if(m_texid == 0) {
                 bool isBold = (m_bold == BOLD::YES) ? true : false;
                 m_image = my::GlobalDrawer::instance().getTextBuilder().build(m_text, m_size, isBold);
+
+                // テクスチャ生成
+                glGenTextures(1, &m_texid);
+                // テクスチャロード
+                glBindTexture(GL_TEXTURE_2D, m_texid);
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, m_image.width(), m_image.height(), 0, GL_ALPHA, GL_UNSIGNED_BYTE, &m_image[0]);
+                glBindTexture(GL_TEXTURE_2D, 0);
+
+                const float xmin = -(static_cast<float>(m_image.width()) / 2.0F);
+                const float ymin = -(static_cast<float>(m_image.height()) / 2.0F);
+                const float xmax = (static_cast<float>(m_image.width()) / 2.0F);
+                const float ymax = (static_cast<float>(m_image.height()) / 2.0F);
+
+                m_vertexes = {
+                    { xmin, ymax, 0.0F },
+                    { xmax, ymax, 0.0F },
+                    { xmin, ymin, 0.0F },
+                    { xmax, ymin, 0.0F }
+                };
+
+                glBindVertexArray(this->m_vao);
+
+                // 頂点データを転送する
+                const std::int32_t vsize = static_cast<std::int32_t>(m_vertexes.size() * sizeof(my::Vertex));
+                const std::int32_t uvsize = static_cast<std::int32_t>(pointNum * 2 * sizeof(GLfloat));
+                glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
+                glBufferData(GL_ARRAY_BUFFER, vsize + uvsize, nullptr, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ARRAY_BUFFER, 0, vsize, &m_vertexes[0]);
+                glBufferSubData(GL_ARRAY_BUFFER, vsize, uvsize, &uv[0]);
+
+                // 頂点インデックスデータを転送する
+                const std::int32_t isize = static_cast<std::int32_t>(m_indexes.size() * sizeof(GLuint));
+                glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
+                glBufferData(GL_ELEMENT_ARRAY_BUFFER, isize, nullptr, GL_DYNAMIC_DRAW);
+                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, isize, &m_indexes[0]);
             }
 
             // シェーダ取得
@@ -325,47 +399,17 @@ namespace {
             glEnable(GL_BLEND);
             glEnable(GL_TEXTURE_2D);
 
-            // テクスチャ生成
-            GLuint texId;
-            glGenTextures(1, &texId);
-
             // テクスチャバインド
-            glBindTexture(GL_TEXTURE_2D, texId);
+            glBindTexture(GL_TEXTURE_2D, m_texid);
 
-            // テクスチャロード
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, m_image.width(), m_image.height(), 0, GL_ALPHA, GL_UNSIGNED_BYTE, &m_image[0]);
-
-            //テクスチャパラメータ設定
+            // テクスチャパラメータ設定
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-            //テクスチャユニット0を指定
+            // テクスチャユニット0を指定
             glUniform1i(texture_loc, 0);
-
-            const float xmin = -(static_cast<float>(m_image.width()) / 2.0F);
-            const float ymin = -(static_cast<float>(m_image.height()) / 2.0F);
-            const float xmax = (static_cast<float>(m_image.width()) / 2.0F);
-            const float ymax = (static_cast<float>(m_image.height()) / 2.0F);
-
-            //頂点座標
-            const GLint pointNum = 4;
-            GLfloat p[pointNum * 3] = {
-                xmin, ymax, 0.0F,
-                xmax, ymax, 0.0F,
-                xmin, ymin, 0.0F,
-                xmax, ymin, 0.0F,
-            };
-
-            //UV座標
-            GLfloat uv[pointNum * 2] = {
-                0.0F, 0.0F,
-                1.0F, 0.0F,
-                0.0F, 1.0F,
-                1.0F, 1.0F,
-            };
 
             //テクスチャ色
             GLfloat color[4];
@@ -375,20 +419,28 @@ namespace {
             color[3] = m_color.a() / 255.0F;
             glUniform4fv(texcolor_loc, 1, &color[0]);
 
-            //頂点データ転送
+            // 頂点配列オブジェクトの結合
+            glBindVertexArray(this->m_vao);
+            glBindBuffer(GL_ARRAY_BUFFER, this->m_vertex_vbo);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->m_index_vbo);
+            // 頂点データを指定
             glEnableVertexAttribArray(pos_loc);
+            glVertexAttribPointer(pos_loc, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+            // UV座標データを指定
             glEnableVertexAttribArray(uv_loc);
-            glVertexAttribPointer(pos_loc, 3, GL_FLOAT, GL_FALSE, 0, (GLfloat*)&p[0]);
-            glVertexAttribPointer(uv_loc, 2, GL_FLOAT, GL_FALSE, 0, (GLfloat*)&uv[0]);
+            glVertexAttribPointer(uv_loc, 2, GL_FLOAT, GL_FALSE, 0, (GLubyte*)(m_vertexes.size() * sizeof(my::Vertex)));
 
-            //描画
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, pointNum);
+            // 描画実行
+            GLsizei icnt = static_cast<GLsizei>(m_indexes.size());
+            glDrawElements(GL_TRIANGLE_STRIP, icnt, GL_UNSIGNED_INT, nullptr);
+
+            // 頂点配列オブジェクトの結合を解除
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+            glBindVertexArray(0);
 
             //テクスチャアンバインド
             glBindTexture(GL_TEXTURE_2D, 0);
-
-            //テクスチャ破棄
-            glDeleteTextures(1, &texId);
 
             glDisable(GL_TEXTURE_2D);
             glDisable(GL_BLEND);
@@ -466,9 +518,9 @@ namespace {
             m_triangle_strip(GL_TRIANGLE_STRIP, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
             m_triangle_fan(GL_TRIANGLE_FAN, TRIANGLE_V, TRIANGLE_I, TRIANGLE_C),
             m_points(GL_POINTS, POINT_V, POINT_I, POINT_C),
-            m_text_ascii(TEXT_ASCII, TEXT_ASCII_C),
-            m_text_kana(TEXT_KANA, TEXT_KANA_C),
-            m_text_bold(TEXT_BOLD, TEXT_BOLD_C)
+            m_text_ascii(TEXT_ASCII),
+            m_text_kana(TEXT_KANA),
+            m_text_bold(TEXT_BOLD)
         {
             std::cout << "[Screen::Screen()] call" << std::endl;
             // 画面サイズを取得する
@@ -535,15 +587,18 @@ namespace {
             // テキスト
             m_text_ascii.setPosition(TEXT_ASCII_POS);
             m_text_ascii.setSize(TEXT_ASCII_SZ);
+            m_text_ascii.setColor(TEXT_ASCII_C);
             m_text_ascii.draw(view, proj);
             // テキスト
             m_text_kana.setPosition(TEXT_KANA_POS);
             m_text_kana.setSize(TEXT_KANA_SZ);
+            m_text_kana.setColor(TEXT_KANA_C);
             m_text_kana.draw(view, proj);
             // テキスト
             m_text_bold.setPosition(TEXT_BOLD_POS);
             m_text_bold.setSize(TEXT_BOLD_SZ);
             m_text_bold.setBold(Text::BOLD::YES);
+            m_text_bold.setColor(TEXT_BOLD_C);
             m_text_bold.draw(view, proj);
             // 画面更新
             glfwSwapBuffers(m_window);
